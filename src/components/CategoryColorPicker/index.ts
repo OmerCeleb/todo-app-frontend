@@ -1,0 +1,1 @@
+export { CategoryColorPicker } from './CategoryColorPicker';
