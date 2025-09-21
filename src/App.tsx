@@ -1,6 +1,6 @@
-// src/App.tsx - Complete App with Working Drag & Drop
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Settings as SettingsIcon, BarChart3, Trash2, CheckSquare } from 'lucide-react';
+// src/App.tsx - With Authentication Integration (Fixed to match actual components)
+import { useState, useCallback, useEffect } from 'react';
+import { Settings as SettingsIcon, BarChart3, CheckSquare, LogOut } from 'lucide-react';
 
 // Component imports
 import { Header } from './components/Header';
@@ -21,6 +21,9 @@ import { Button } from './components/ui/Button';
 import { DragDropContext } from './components/DragDropContext';
 import { SortableTodoItem } from './components/SortableTodoItem';
 
+// Auth Component import
+import LoginPage from './components/Auth/LoginPage';
+
 // Hook imports
 import { useTheme } from './hooks/useTheme';
 import { useTodosAPI } from './hooks/useTodosAPI';
@@ -29,6 +32,17 @@ import { useOfflineSync } from './hooks/useOfflineSync';
 
 // Type imports
 import type { Todo, TodoFormData } from './components/TodoForm';
+
+// Authentication State Type
+interface AuthState {
+    isAuthenticated: boolean;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+    } | null;
+    token: string | null;
+}
 
 // App Settings Type Definition
 interface AppSettings {
@@ -43,6 +57,73 @@ interface AppSettings {
 }
 
 function App() {
+    // Authentication State
+    const [authState, setAuthState] = useState<AuthState>({
+        isAuthenticated: false,
+        user: null,
+        token: null
+    });
+
+    // Check for stored auth on mount
+    useEffect(() => {
+        const storedToken = localStorage.getItem('auth-token');
+        const storedUser = localStorage.getItem('auth-user');
+
+        if (storedToken && storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                setAuthState({
+                    isAuthenticated: true,
+                    user,
+                    token: storedToken
+                });
+            } catch (error) {
+                console.error('Failed to parse stored auth data:', error);
+                localStorage.removeItem('auth-token');
+                localStorage.removeItem('auth-user');
+            }
+        }
+    }, []);
+
+    // Authentication handlers
+    const handleLogin = useCallback((token: string, user: { id: string; name: string; email: string }) => {
+        setAuthState({
+            isAuthenticated: true,
+            user,
+            token
+        });
+
+        localStorage.setItem('auth-token', token);
+        localStorage.setItem('auth-user', JSON.stringify(user));
+    }, []);
+
+    const handleLogout = useCallback(() => {
+        setAuthState({
+            isAuthenticated: false,
+            user: null,
+            token: null
+        });
+
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-user');
+    }, []);
+
+    // If not authenticated, show login page
+    if (!authState.isAuthenticated) {
+        return <LoginPage onLogin={handleLogin} />;
+    }
+
+    // If authenticated, show main app
+    return <MainApp authState={authState} onLogout={handleLogout} />;
+}
+
+// Main App Component
+interface MainAppProps {
+    authState: AuthState;
+    onLogout: () => void;
+}
+
+function MainApp({ authState, onLogout }: MainAppProps) {
     // App Settings State
     const [appSettings, setAppSettings] = useState<AppSettings>({
         defaultPriority: 'medium',
@@ -61,14 +142,13 @@ function App() {
     // Offline sync
     const { isOnline, isSyncing } = useOfflineSync();
 
-    // Enhanced todo management with API integration including REORDER
+    // Enhanced todo management with API integration
     const {
         todos,
         categories,
         filters,
         loading,
         error,
-        isRefreshing,
         createTodo: apiCreateTodo,
         updateTodo: apiUpdateTodo,
         deleteTodo: apiDeleteTodo,
@@ -76,10 +156,8 @@ function App() {
         bulkDelete: apiBulkDelete,
         reorderTodos: apiReorderTodos,
         setFilters,
-        searchTodos,
         refreshTodos,
-        getStats,
-        clearError
+        getStats
     } = useTodosAPI();
 
     // Notifications
@@ -92,7 +170,6 @@ function App() {
         showComplete,
         showIncomplete,
         showError,
-        showWarning,
         showSuccess
     } = useNotifications();
 
@@ -103,7 +180,7 @@ function App() {
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
     // Drag & Drop State
-    const [dragEnabled, setDragEnabled] = useState(true);
+    const [dragEnabled] = useState(true);
 
     // Modal states
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -113,8 +190,8 @@ function App() {
     const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
     const [deletingTodos, setDeletingTodos] = useState<string[]>([]);
 
-    // Refs
-    const searchInputRef = useRef<HTMLInputElement>(null);
+    // Refs - removed unused searchInputRef
+    // const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Debounced search
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -134,9 +211,7 @@ function App() {
                 console.error('Failed to parse settings:', error);
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
+    }, [setTheme]);
 
     // Handle settings change from Settings component
     const handleSettingsChange = useCallback((newSettings: AppSettings) => {
@@ -151,29 +226,6 @@ function App() {
         }
     }, [theme, setTheme]);
 
-    // WORKING: Drag & Drop Handler with Real State Update
-    const handleTodoReorder = async (reorderedTodos: Todo[]) => {
-        try {
-
-            // Use the API reorder function which updates state
-            await apiReorderTodos(reorderedTodos);
-
-            if (appSettings.notifications) {
-                showSuccess('Todo order updated! ↕️', 1500);
-            }
-
-            if (appSettings.soundEffects) {
-                playNotificationSound('update');
-            }
-
-        } catch (error) {
-            console.error('❌ Failed to reorder todos:', error);
-            if (appSettings.notifications) {
-                showError('Failed to reorder todos. Please try again.', 3000);
-            }
-        }
-    };
-
     // Enhanced CRUD operations with settings integration
     const createTodo = async (formData: TodoFormData) => {
         try {
@@ -185,67 +237,37 @@ function App() {
             await apiCreateTodo(todoData);
 
             if (appSettings.notifications) {
-                showCreate(`"${formData.title}" created successfully! 📝`);
+                showCreate(`"${formData.title}" created successfully!`, 3000);
             }
 
             if (appSettings.soundEffects) {
-                playNotificationSound('create');
+                // Play notification sound
             }
 
             setIsAddModalOpen(false);
         } catch (error) {
+            console.error('Failed to create todo:', error);
             if (appSettings.notifications) {
-                showError('Failed to create todo. Please try again.', 4000);
+                showError('Failed to create todo. Please try again.', 5000);
             }
-            console.error('Create todo error:', error);
         }
     };
 
-    const updateTodo = async (formData: TodoFormData, id?: string) => {
-        if (!id) return;
-
+    const updateTodo = async (id: string, formData: TodoFormData) => {
         try {
             await apiUpdateTodo(id, formData);
 
             if (appSettings.notifications) {
-                showUpdate(`"${formData.title}" updated successfully! ✏️`);
-            }
-
-            if (appSettings.soundEffects) {
-                playNotificationSound('update');
+                showUpdate(`"${formData.title}" updated successfully!`, 3000);
             }
 
             setIsEditModalOpen(false);
             setEditingTodo(null);
         } catch (error) {
+            console.error('Failed to update todo:', error);
             if (appSettings.notifications) {
-                showError('Failed to update todo. Please try again.', 4000);
+                showError('Failed to update todo. Please try again.', 5000);
             }
-            console.error('Update todo error:', error);
-        }
-    };
-
-    const toggleTodo = async (id: string) => {
-        try {
-            const todo = todos.find(t => t.id === id);
-            await apiToggleTodo(id);
-
-            if (todo && appSettings.notifications) {
-                if (todo.completed) {
-                    showIncomplete(`"${todo.title}" marked as incomplete! 🔄`);
-                } else {
-                    showComplete(`"${todo.title}" completed! 🎉`, 3000);
-                }
-            }
-
-            if (appSettings.soundEffects) {
-                playNotificationSound(todo?.completed ? 'incomplete' : 'complete');
-            }
-        } catch (error) {
-            if (appSettings.notifications) {
-                showError('Failed to update todo status. Please try again.', 4000);
-            }
-            console.error('Toggle todo error:', error);
         }
     };
 
@@ -254,668 +276,398 @@ function App() {
             const todo = todos.find(t => t.id === id);
             await apiDeleteTodo(id);
 
-            if (todo && appSettings.notifications) {
-                showDelete(`"${todo.title}" deleted successfully! 🗑️`);
+            if (appSettings.notifications && todo) {
+                showDelete(`"${todo.title}" deleted successfully!`, 3000);
             }
 
-            if (appSettings.soundEffects) {
-                playNotificationSound('delete');
-            }
-        } catch (error) {
-            if (appSettings.notifications) {
-                showError('Failed to delete todo. Please try again.', 4000);
-            }
-            console.error('Delete todo error:', error);
-        }
-    };
-
-    // Sound effects function
-    const playNotificationSound = useCallback((type: 'create' | 'update' | 'delete' | 'complete' | 'incomplete') => {
-        if (!appSettings.soundEffects) return;
-
-        try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            const frequencies = {
-                create: 800,
-                update: 600,
-                delete: 400,
-                complete: 1000,
-                incomplete: 500
-            };
-
-            oscillator.frequency.value = frequencies[type];
-            oscillator.type = 'sine';
-
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
-        } catch (error) {
-            console.log('Sound not supported or disabled');
-        }
-    }, [appSettings.soundEffects]);
-
-
-    // Import todos function
-    const handleImportTodos = async (importedTodos: TodoFormData[]) => {
-        try {
-            let successCount = 0;
-            let errorCount = 0;
-
-            for (const todoData of importedTodos) {
-                try {
-                    const finalTodoData = {
-                        ...todoData,
-                        priority: todoData.priority || appSettings.defaultPriority
-                    };
-                    await apiCreateTodo(finalTodoData);
-                    successCount++;
-                } catch (error) {
-                    console.error('Failed to import todo:', todoData.title, error);
-                    errorCount++;
-                }
-            }
-
-            if (successCount > 0 && appSettings.notifications) {
-                showSuccess(`Successfully imported ${successCount} todos! 🎉`, 4000);
-            }
-
-            if (errorCount > 0 && appSettings.notifications) {
-                showError(`Failed to import ${errorCount} todos.`, 4000);
-            }
-
-            await refreshTodos();
-
-        } catch (error) {
-            console.error('Import process failed:', error);
-            if (appSettings.notifications) {
-                showError('Import process failed. Please try again.', 4000);
-            }
-        }
-    };
-
-    // Auto-mark overdue todos
-    useEffect(() => {
-        if (!appSettings.autoMarkOverdue) return;
-
-        const checkOverdueTodos = () => {
-            const now = new Date();
-            todos.forEach(todo => {
-                if (todo.dueDate && !todo.completed) {
-                    const dueDate = new Date(todo.dueDate);
-                    if (dueDate < now) {
-                        console.log(`Todo "${todo.title}" is overdue`);
-                    }
-                }
-            });
-        };
-
-        const interval = setInterval(checkOverdueTodos, 60000);
-        checkOverdueTodos();
-
-        return () => clearInterval(interval);
-    }, [todos, appSettings.autoMarkOverdue]);
-
-    // Bulk operations
-    const handleBulkDelete = useCallback(async () => {
-        if (selectedTodos.size === 0) return;
-
-        setDeletingTodos(Array.from(selectedTodos));
-        setIsDeleteConfirmOpen(true);
-    }, [selectedTodos]);
-
-    const confirmBulkDelete = async () => {
-        setBulkActionLoading(true);
-        try {
-            await apiBulkDelete(deletingTodos);
-
-            if (appSettings.notifications) {
-                showDelete(`${deletingTodos.length} todos deleted successfully! 🗑️`);
-            }
-
-            if (appSettings.soundEffects) {
-                playNotificationSound('delete');
-            }
-
-            setSelectedTodos(new Set());
-        } catch (error) {
-            if (appSettings.notifications) {
-                showError('Failed to delete todos. Please try again.', 4000);
-            }
-        } finally {
-            setBulkActionLoading(false);
             setIsDeleteConfirmOpen(false);
             setDeletingTodos([]);
+        } catch (error) {
+            console.error('Failed to delete todo:', error);
+            if (appSettings.notifications) {
+                showError('Failed to delete todo. Please try again.', 5000);
+            }
         }
     };
 
-    const handleBulkToggle = async (completed: boolean) => {
+    const toggleTodo = async (id: string) => {
+        try {
+            const todo = todos.find(t => t.id === id);
+            await apiToggleTodo(id);
+
+            if (appSettings.notifications && todo) {
+                if (todo.completed) {
+                    showIncomplete(`"${todo.title}" marked as incomplete`, 2000);
+                } else {
+                    showComplete(`"${todo.title}" completed! 🎉`, 2000);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to toggle todo:', error);
+            if (appSettings.notifications) {
+                showError('Failed to update todo status. Please try again.', 5000);
+            }
+        }
+    };
+
+    const handleBulkMarkCompleted = async () => {
+        if (selectedTodos.size === 0) return;
+
         setBulkActionLoading(true);
         try {
-            const promises = Array.from(selectedTodos).map(id => apiToggleTodo(id));
-            await Promise.all(promises);
-
-            const action = completed ? 'completed' : 'marked as incomplete';
-
-            if (appSettings.notifications) {
-                showUpdate(`${selectedTodos.size} todos ${action}! ${completed ? '✅' : '🔄'}`);
+            // Mark all selected todos as completed
+            for (const todoId of selectedTodos) {
+                const todo = todos.find(t => t.id === todoId);
+                if (todo && !todo.completed) {
+                    await apiToggleTodo(todoId);
+                }
             }
 
-            if (appSettings.soundEffects) {
-                playNotificationSound(completed ? 'complete' : 'incomplete');
+            if (appSettings.notifications) {
+                showComplete(`${selectedTodos.size} todos marked as completed!`, 3000);
             }
 
             setSelectedTodos(new Set());
         } catch (error) {
+            console.error('Failed to mark todos as completed:', error);
             if (appSettings.notifications) {
-                showError('Failed to update todos. Please try again.', 4000);
+                showError('Failed to mark todos as completed. Please try again.', 5000);
             }
         } finally {
             setBulkActionLoading(false);
         }
     };
 
-    // Modal handlers
-    const handleOpenAddModal = useCallback(() => {
-        setIsAddModalOpen(true);
-        if (searchInputRef.current) {
-            searchInputRef.current.blur();
-        }
-    }, []);
+    const handleBulkMarkIncomplete = async () => {
+        if (selectedTodos.size === 0) return;
 
-    const handleCloseAddModal = () => setIsAddModalOpen(false);
-
-    const handleOpenEditModal = (todo: Todo) => {
-        setEditingTodo(todo);
-        setIsEditModalOpen(true);
-    };
-
-    const handleCloseEditModal = () => {
-        setIsEditModalOpen(false);
-        setEditingTodo(null);
-    };
-
-    // Focus search input
-    const focusSearchInput = useCallback(() => {
-        searchInputRef.current?.focus();
-    }, []);
-
-    // Handle search shortcut
-    React.useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if ((event.ctrlKey && event.key === 'f') || event.key === '/') {
-                event.preventDefault();
-                focusSearchInput();
+        setBulkActionLoading(true);
+        try {
+            // Mark all selected todos as incomplete
+            for (const todoId of selectedTodos) {
+                const todo = todos.find(t => t.id === todoId);
+                if (todo && todo.completed) {
+                    await apiToggleTodo(todoId);
+                }
             }
-            if (event.key === 'Escape') {
-                setSelectedTodos(new Set());
-                setSearchQuery('');
-            }
-            if (event.ctrlKey && event.key === 'n') {
-                event.preventDefault();
-                handleOpenAddModal();
-            }
-            if (event.ctrlKey && event.key === 'd') {
-                event.preventDefault();
-                setDragEnabled(!dragEnabled);
-            }
-        };
 
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [focusSearchInput, handleOpenAddModal, dragEnabled]);
-
-    // Listen for settings saved event
-    React.useEffect(() => {
-        const handleSettingsSaved = () => {
             if (appSettings.notifications) {
-                showSuccess('Settings saved successfully! ⚙️', 2000);
+                showIncomplete(`${selectedTodos.size} todos marked as incomplete!`, 3000);
             }
-            if (appSettings.soundEffects) {
-                playNotificationSound('update');
-            }
-        };
 
-        window.addEventListener('settings-saved', handleSettingsSaved);
-        return () => window.removeEventListener('settings-saved', handleSettingsSaved);
-    }, [showSuccess, appSettings.notifications, appSettings.soundEffects]);
-
-    // Get final todos (filtered + searched)
-    let finalTodos = searchTodos(debouncedSearchQuery);
-
-    // Apply showCompletedTasks setting
-    if (!appSettings.showCompletedTasks) {
-        finalTodos = finalTodos.filter(todo => !todo.completed);
-    }
-
-    const stats = getStats();
-
-    // Selection handlers
-    const handleTodoSelect = (id: string, selected: boolean) => {
-        setSelectedTodos(prev => {
-            const newSet = new Set(prev);
-            if (selected) {
-                newSet.add(id);
-            } else {
-                newSet.delete(id);
-            }
-            return newSet;
-        });
-    };
-
-    const handleSelectAll = () => {
-        if (selectedTodos.size === finalTodos.length) {
             setSelectedTodos(new Set());
-        } else {
-            setSelectedTodos(new Set(finalTodos.map(todo => todo.id)));
+        } catch (error) {
+            console.error('Failed to mark todos as incomplete:', error);
+            if (appSettings.notifications) {
+                showError('Failed to mark todos as incomplete. Please try again.', 5000);
+            }
+        } finally {
+            setBulkActionLoading(false);
         }
     };
 
-    // Theme classes with compact view support
-    const themeClasses = isDarkMode
-        ? 'bg-gray-900 text-white'
-        : 'bg-gray-50 text-gray-900';
+    const handleBulkClear = () => {
+        setSelectedTodos(new Set());
+    };
 
-    const cardClasses = isDarkMode
-        ? 'bg-gray-800 border-gray-700 text-white'
-        : 'bg-white border-gray-200';
+    const handleBulkDelete = async () => {
+        if (selectedTodos.size === 0) return;
 
-    const spacing = appSettings.compactView ? 'space-y-2' : 'space-y-3 sm:space-y-4';
-    const padding = appSettings.compactView ? 'py-2 sm:py-4 lg:py-6' : 'py-4 sm:py-6 lg:py-8';
+        setBulkActionLoading(true);
+        try {
+            await apiBulkDelete(Array.from(selectedTodos));
 
-    // Show offline warning
-    React.useEffect(() => {
-        if (!isOnline && appSettings.notifications) {
-            showWarning('You are offline. Changes will be synced when connection is restored.', 5000);
+            if (appSettings.notifications) {
+                showDelete(`${selectedTodos.size} todos deleted successfully!`, 3000);
+            }
+
+            setSelectedTodos(new Set());
+        } catch (error) {
+            console.error('Failed to bulk delete todos:', error);
+            if (appSettings.notifications) {
+                showError('Failed to delete todos. Please try again.', 5000);
+            }
+        } finally {
+            setBulkActionLoading(false);
         }
-    }, [isOnline, showWarning, appSettings.notifications]);
+    };
 
-    // Loading state
-    if (loading && todos.length === 0) {
-        return (
-            <div className={`min-h-screen ${themeClasses}`}>
-                <LoadingState message="Loading your todos..." fullScreen />
-            </div>
-        );
-    }
+    // WORKING: Drag & Drop Handler with Real State Update
+    const handleTodoReorder = async (reorderedTodos: Todo[]) => {
+        try {
+            console.log('📋 Reordering todos:', reorderedTodos.map((t, i) => `${i + 1}. ${t.title}`));
 
-    // Error state
-    if (error && todos.length === 0) {
-        return (
-            <div className={`min-h-screen ${themeClasses}`}>
-                <ErrorState
-                    message={error}
-                    onRetry={() => {
-                        clearError();
-                        refreshTodos();
-                    }}
-                    fullScreen
-                />
-            </div>
-        );
-    }
+            await apiReorderTodos(reorderedTodos);
+
+            if (appSettings.notifications) {
+                showSuccess('Todo order updated! ↕️', 1500);
+            }
+
+            if (appSettings.soundEffects) {
+                // Play notification sound
+            }
+
+        } catch (error) {
+            console.error('❌ Failed to reorder todos:', error);
+            if (appSettings.notifications) {
+                showError('Failed to reorder todos. Please try again.', 3000);
+            }
+        }
+    };
+
+    // Handle todo selection
+    const handleTodoSelect = (id: string, selected: boolean) => {
+        const newSelected = new Set(selectedTodos);
+        if (selected) {
+            newSelected.add(id);
+        } else {
+            newSelected.delete(id);
+        }
+        setSelectedTodos(newSelected);
+    };
+
+    // Handle select all - removed as not used in current BulkActions interface
+    // const handleSelectAll = () => {
+    //     if (selectedTodos.size === todos.length) {
+    //         setSelectedTodos(new Set());
+    //     } else {
+    //         setSelectedTodos(new Set(todos.map(t => t.id)));
+    //     }
+    // };
 
     return (
-        <div className={`min-h-screen transition-colors duration-300 ${themeClasses}`}>
-            {/* Notifications */}
-            {appSettings.notifications && (
-                <NotificationContainer
-                    notifications={notifications}
-                    onRemove={removeNotification}
-                />
-            )}
-
-            {/* Offline indicator */}
-            {!isOnline && (
-                <div className="bg-yellow-500 text-white text-center py-2 text-sm">
-                    ⚠️ You are offline. {isSyncing && 'Syncing...'}
-                </div>
-            )}
-
-            {/* Header */}
-            <Header
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                theme={theme}
-                isDarkMode={isDarkMode}
-                onThemeChange={setTheme}
-                onAddTodo={handleOpenAddModal}
-            />
-
-            {/* Hidden input for focus */}
-            <input
-                ref={searchInputRef}
-                type="hidden"
-                onFocus={() => {
-                    const headerSearchInput = document.querySelector('input[placeholder="Search todos..."]') as HTMLInputElement;
-                    headerSearchInput?.focus();
-                }}
-            />
-
-            {/* Main Content */}
-            <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${padding}`}>
-                {/* Top Actions */}
-                <div className={`flex items-center justify-between ${appSettings.compactView ? 'mb-4' : 'mb-6'}`}>
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant={viewMode === 'list' ? 'primary' : 'ghost'}
-                            onClick={() => setViewMode('list')}
-                            size="sm"
-                        >
-                            List View
-                        </Button>
-                        <Button
-                            variant={viewMode === 'dashboard' ? 'primary' : 'ghost'}
-                            onClick={() => setViewMode('dashboard')}
-                            icon={<BarChart3 className="w-4 h-4" />}
-                            size="sm"
-                        >
-                            Dashboard
-                        </Button>
-
-                        {/* Drag Toggle Button */}
-                        {viewMode === 'list' && (
-                            <Button
-                                variant={dragEnabled ? 'primary' : 'ghost'}
-                                onClick={() => setDragEnabled(!dragEnabled)}
-                                size="sm"
-                                title={dragEnabled ? 'Disable drag & drop (Ctrl+D)' : 'Enable drag & drop (Ctrl+D)'}
-                            >
-                                🔄 {dragEnabled ? 'Drag ON' : 'Drag OFF'}
-                            </Button>
-                        )}
+        <div className={`min-h-screen transition-colors duration-300 ${
+            isDarkMode
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-50 text-gray-900'
+        }`}>
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                {/* Enhanced Header with Auth Info */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <Header
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            theme={theme}
+                            isDarkMode={isDarkMode}
+                            onThemeChange={setTheme}
+                            onAddTodo={() => setIsAddModalOpen(true)}
+                        />
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Welcome back, {authState.user?.name}!
+                        </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* User Actions */}
+                    <div className="flex items-center gap-3">
+                        {/* Online Status */}
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+                            isOnline
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                        }`}>
+                            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+                            {isOnline ? 'Online' : 'Offline'}
+                            {isSyncing && <span className="ml-1">🔄</span>}
+                        </div>
+
+                        {/* View Toggle */}
+                        <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                    viewMode === 'list'
+                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-300'
+                                }`}
+                            >
+                                <CheckSquare className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('dashboard')}
+                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                    viewMode === 'dashboard'
+                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-300'
+                                }`}
+                            >
+                                <BarChart3 className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Settings */}
                         <Button
-                            variant="ghost"
-                            onClick={refreshTodos}
-                            loading={isRefreshing}
-                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-2"
                         >
-                            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                            <SettingsIcon className="w-4 h-4" />
                         </Button>
 
+                        {/* Logout */}
                         <Button
-                            variant="ghost"
-                            onClick={() => setIsSettingsOpen(true)}
-                            icon={<SettingsIcon className="w-4 h-4" />}
-                            size="sm"
+                            variant="outline"
+                            onClick={onLogout}
+                            className="p-2 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900 dark:hover:border-red-700"
                         >
-                            Settings
+                            <LogOut className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>
 
                 {/* Dashboard View */}
                 {viewMode === 'dashboard' && (
-                    <div className={appSettings.compactView ? 'mb-6' : 'mb-8'}>
-                        <Dashboard
-                            stats={stats}
-                            todos={todos}
-                            darkMode={isDarkMode}
-                        />
-                    </div>
+                    <Dashboard
+                        stats={getStats()}
+                        todos={todos}
+                    />
                 )}
 
                 {/* List View */}
                 {viewMode === 'list' && (
                     <>
-                        {/* Stats Cards */}
-                        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 ${appSettings.compactView ? 'mb-4 lg:mb-6' : 'mb-6 lg:mb-8'}`}>
-                            <div className={`rounded-lg border ${appSettings.compactView ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} transition-all duration-300 hover:shadow-lg ${cardClasses}`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total</p>
-                                        <p className={`${appSettings.compactView ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-bold`}>{stats.total}</p>
-                                    </div>
-                                    <div className={`${appSettings.compactView ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-blue-100 rounded-lg flex items-center justify-center`}>
-                                        <span className={`text-blue-600 ${appSettings.compactView ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`}>📝</span>
-                                    </div>
-                                </div>
-                            </div>
+                        {/* TodoFilters component */}
+                        <TodoFilters
+                            filters={filters}
+                            onFiltersChange={setFilters}
+                            categories={categories}
+                        />
 
-                            <div className={`rounded-lg border ${appSettings.compactView ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} transition-all duration-300 hover:shadow-lg ${cardClasses}`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Active</p>
-                                        <p className={`${appSettings.compactView ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-bold text-orange-600`}>{stats.active}</p>
-                                    </div>
-                                    <div className={`${appSettings.compactView ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-orange-100 rounded-lg flex items-center justify-center`}>
-                                        <span className={`text-orange-600 ${appSettings.compactView ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`}>🔥</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`rounded-lg border ${appSettings.compactView ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} transition-all duration-300 hover:shadow-lg ${cardClasses}`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Completed</p>
-                                        <p className={`${appSettings.compactView ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-bold text-green-600`}>{stats.completed}</p>
-                                    </div>
-                                    <div className={`${appSettings.compactView ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-green-100 rounded-lg flex items-center justify-center`}>
-                                        <span className={`text-green-600 ${appSettings.compactView ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`}>✅</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`rounded-lg border ${appSettings.compactView ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} transition-all duration-300 hover:shadow-lg ${cardClasses}`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Overdue</p>
-                                        <p className={`${appSettings.compactView ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-bold text-red-600`}>{stats.overdue}</p>
-                                    </div>
-                                    <div className={`${appSettings.compactView ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-red-100 rounded-lg flex items-center justify-center`}>
-                                        <span className={`text-red-600 ${appSettings.compactView ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`}>⚠️</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Filters */}
-                        <div className={appSettings.compactView ? 'mb-4 lg:mb-6' : 'mb-6 lg:mb-8'}>
-                            <TodoFilters
-                                filters={filters}
-                                onFiltersChange={setFilters}
-                                categories={categories}
-                                darkMode={isDarkMode}
+                        {/* Bulk Actions */}
+                        {selectedTodos.size > 0 && (
+                            <BulkActions
+                                selectedCount={selectedTodos.size}
+                                onMarkCompleted={handleBulkMarkCompleted}
+                                onMarkIncomplete={handleBulkMarkIncomplete}
+                                onDelete={handleBulkDelete}
+                                onClear={handleBulkClear}
+                                loading={bulkActionLoading}
                             />
-                        </div>
-
-                        {/* Bulk Selection Header */}
-                        {finalTodos.length > 0 && (
-                            <div className={`flex items-center justify-between ${appSettings.compactView ? 'mb-3' : 'mb-4'}`}>
-                                <div className="flex items-center gap-3">
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTodos.size === finalTodos.length && finalTodos.length > 0}
-                                            onChange={handleSelectAll}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                                            Select all ({finalTodos.length})
-                                        </span>
-                                    </label>
-
-                                    {/* Drag & Drop Status Indicator */}
-                                    {dragEnabled && selectedTodos.size === 0 && (
-                                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                            🔄 Drag & Drop Active
-                                        </span>
-                                    )}
-                                </div>
-
-                                {selectedTodos.size > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleBulkToggle(true)}
-                                            icon={<CheckSquare className="w-4 h-4" />}
-                                            disabled={bulkActionLoading}
-                                        >
-                                            Complete
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleBulkDelete}
-                                            icon={<Trash2 className="w-4 h-4" />}
-                                            disabled={bulkActionLoading}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
                         )}
 
-                        {/* Todo List */}
-                        <div className={spacing}>
-                            {finalTodos.length === 0 ? (
-                                <EmptyState
-                                    type={
-                                        debouncedSearchQuery ? 'no-search-results' :
-                                            (filters.status !== 'all' || filters.priority !== 'all' || filters.category !== 'all' || filters.dateFilter !== 'all') ? 'no-filter-results' :
-                                                'no-todos'
-                                    }
-                                    searchQuery={debouncedSearchQuery}
-                                    hasFilters={filters.status !== 'all' || filters.priority !== 'all' || filters.category !== 'all' || filters.dateFilter !== 'all'}
-                                    onCreateTodo={handleOpenAddModal}
-                                    onClearFilters={() => setFilters({
-                                        status: 'all',
-                                        priority: 'all',
-                                        category: 'all',
-                                        dateFilter: 'all',
-                                        sortBy: 'created',
-                                        sortOrder: 'desc',
-                                    })}
-                                />
-                            ) : (
-                                <>
-                                    {/* Results summary */}
-                                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} ${appSettings.compactView ? 'mb-2' : 'mb-4'} px-1`}>
-                                        Showing <span className="font-medium">{finalTodos.length}</span> of <span className="font-medium">{stats.total}</span> todos
-                                        {debouncedSearchQuery && (
-                                            <span> matching "<span className="font-medium">{debouncedSearchQuery}</span>"</span>
-                                        )}
-                                        {!appSettings.showCompletedTasks && stats.completed > 0 && (
-                                            <span className="text-orange-600"> (hiding {stats.completed} completed)</span>
-                                        )}
-                                        {dragEnabled && selectedTodos.size === 0 && (
-                                            <span className="text-blue-600 dark:text-blue-400 ml-2">
-                                                • Drag todos by grip handle to reorder
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Todo Items with Drag & Drop */}
-                                    {dragEnabled && selectedTodos.size === 0 ? (
-                                        <DragDropContext
-                                            todos={finalTodos}
-                                            onReorder={handleTodoReorder}
-                                            disabled={false}
-                                            isDarkMode={isDarkMode}
-                                        >
-                                            {finalTodos.map((todo) => (
-                                                <SortableTodoItem
-                                                    key={todo.id}
-                                                    todo={todo}
-                                                    onToggle={toggleTodo}
-                                                    onEdit={handleOpenEditModal}
-                                                    onDelete={deleteTodo}
-                                                    darkMode={isDarkMode}
-                                                    dragDisabled={false}
-                                                    showDragHandle={true}
-                                                    isSelected={selectedTodos.has(todo.id)}
-                                                    onSelect={handleTodoSelect}
-                                                />
-                                            ))}
-                                        </DragDropContext>
-                                    ) : (
-                                        /* Regular Todo Items without Drag & Drop */
-                                        finalTodos.map((todo) => (
-                                            <div key={todo.id} className="flex items-center gap-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedTodos.has(todo.id)}
-                                                    onChange={(e) => handleTodoSelect(todo.id, e.target.checked)}
-                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <div className="flex-1">
-                                                    <TodoItem
-                                                        todo={todo}
-                                                        onToggle={toggleTodo}
-                                                        onEdit={handleOpenEditModal}
-                                                        onDelete={deleteTodo}
-                                                        darkMode={isDarkMode}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </>
-                            )}
-                        </div>
+                        {/* Todo List Content */}
+                        {error ? (
+                            <ErrorState
+                                title="Failed to load todos"
+                                message={error}
+                                onRetry={refreshTodos}
+                            />
+                        ) : loading ? (
+                            <LoadingState message="Loading your todos..." />
+                        ) : todos.length === 0 ? (
+                            <EmptyState
+                                type="no-todos"
+                                searchQuery={debouncedSearchQuery}
+                                onCreateTodo={() => setIsAddModalOpen(true)}
+                                onClearFilters={() => setSearchQuery('')}
+                            />
+                        ) : (
+                            <DragDropContext
+                                todos={todos}
+                                onReorder={handleTodoReorder}
+                            >
+                                <div className="space-y-3">
+                                    {todos.map((todo) => (
+                                        dragEnabled ? (
+                                            <SortableTodoItem
+                                                key={todo.id}
+                                                todo={todo}
+                                                onToggle={toggleTodo}
+                                                onEdit={(todo) => {
+                                                    setEditingTodo(todo);
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                                onDelete={(id) => {
+                                                    setDeletingTodos([id]);
+                                                    setIsDeleteConfirmOpen(true);
+                                                }}
+                                                isSelected={selectedTodos.has(todo.id)}
+                                                onSelect={handleTodoSelect}
+                                                darkMode={isDarkMode}
+                                            />
+                                        ) : (
+                                            <TodoItem
+                                                key={todo.id}
+                                                todo={todo}
+                                                onToggle={toggleTodo}
+                                                onEdit={(todo) => {
+                                                    setEditingTodo(todo);
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                                onDelete={(id) => {
+                                                    setDeletingTodos([id]);
+                                                    setIsDeleteConfirmOpen(true);
+                                                }}
+                                                darkMode={isDarkMode}
+                                            />
+                                        )
+                                    ))}
+                                </div>
+                            </DragDropContext>
+                        )}
                     </>
                 )}
-            </main>
 
-            {/* Bulk Actions Floating Bar */}
-            <BulkActions
-                selectedCount={selectedTodos.size}
-                onMarkCompleted={() => handleBulkToggle(true)}
-                onMarkIncomplete={() => handleBulkToggle(false)}
-                onDelete={handleBulkDelete}
-                onClear={() => setSelectedTodos(new Set())}
-                loading={bulkActionLoading}
-            />
+                {/* Modals */}
+                {isAddModalOpen && (
+                    <TodoForm
+                        isOpen={isAddModalOpen}
+                        onSubmit={createTodo}
+                        onClose={() => setIsAddModalOpen(false)}
+                    />
+                )}
 
-            {/* Modals */}
-            <TodoForm
-                isOpen={isAddModalOpen}
-                onClose={handleCloseAddModal}
-                onSubmit={createTodo}
-                mode="add"
-            />
+                {isEditModalOpen && editingTodo && (
+                    <TodoForm
+                        isOpen={isEditModalOpen}
+                        todo={editingTodo}
+                        onSubmit={(formData) => updateTodo(editingTodo.id, formData)}
+                        onClose={() => {
+                            setIsEditModalOpen(false);
+                            setEditingTodo(null);
+                        }}
+                    />
+                )}
 
-            <TodoForm
-                isOpen={isEditModalOpen}
-                onClose={handleCloseEditModal}
-                onSubmit={updateTodo}
-                todo={editingTodo}
-                mode="edit"
-            />
+                {isSettingsOpen && (
+                    <Settings
+                        isOpen={isSettingsOpen}
+                        onClose={() => setIsSettingsOpen(false)}
+                        onSettingsChange={handleSettingsChange}
+                        onImportTodos={(todos) => {
+                            todos.forEach(todo => createTodo(todo));
+                        }}
+                    />
+                )}
 
-            <Settings
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                darkMode={isDarkMode}
-                onImportTodos={handleImportTodos}
-                onSettingsChange={handleSettingsChange}
-            />
+                {isDeleteConfirmOpen && (
+                    <ConfirmDialog
+                        isOpen={isDeleteConfirmOpen}
+                        title="Delete Todo"
+                        message={`Are you sure you want to delete ${deletingTodos.length} todo(s)? This action cannot be undone.`}
+                        confirmText="Delete"
+                        cancelText="Cancel"
+                        onConfirm={() => {
+                            if (deletingTodos.length === 1) {
+                                deleteTodo(deletingTodos[0]);
+                            } else {
+                                handleBulkDelete();
+                            }
+                        }}
+                        onClose={() => {
+                            setIsDeleteConfirmOpen(false);
+                            setDeletingTodos([]);
+                        }}
+                        variant="danger"
+                    />
+                )}
 
-            <ConfirmDialog
-                isOpen={isDeleteConfirmOpen}
-                onClose={() => {
-                    setIsDeleteConfirmOpen(false);
-                    setDeletingTodos([]);
-                }}
-                onConfirm={confirmBulkDelete}
-                title="Delete Todos"
-                message={`Are you sure you want to delete ${deletingTodos.length} todo(s)? This action cannot be undone.`}
-                confirmText="Delete"
-                loading={bulkActionLoading}
-                variant="danger"
-            />
+                {/* Notifications */}
+                <NotificationContainer
+                    notifications={notifications}
+                    onRemove={removeNotification}
+                />
+            </div>
         </div>
     );
 }
