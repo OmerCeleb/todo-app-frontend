@@ -1,4 +1,4 @@
-// src/App.tsx - With Authentication Integration (Fixed to match actual components)
+// src/App.tsx - Updated with AuthContext integration (keeping existing structure)
 import { useState, useCallback, useEffect } from 'react';
 import { Settings as SettingsIcon, BarChart3, CheckSquare, LogOut } from 'lucide-react';
 
@@ -21,8 +21,9 @@ import { Button } from './components/ui/Button';
 import { DragDropContext } from './components/DragDropContext';
 import { SortableTodoItem } from './components/SortableTodoItem';
 
-// Auth Component import
+// Auth imports - NEW
 import LoginPage from './components/Auth/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Hook imports
 import { useTheme } from './hooks/useTheme';
@@ -32,17 +33,6 @@ import { useOfflineSync } from './hooks/useOfflineSync';
 
 // Type imports
 import type { Todo, TodoFormData } from './components/TodoForm';
-
-// Authentication State Type
-interface AuthState {
-    isAuthenticated: boolean;
-    user: {
-        id: string;
-        name: string;
-        email: string;
-    } | null;
-    token: string | null;
-}
 
 // App Settings Type Definition
 interface AppSettings {
@@ -56,74 +46,26 @@ interface AppSettings {
     theme: 'light' | 'dark' | 'system';
 }
 
-function App() {
-    // Authentication State
-    const [authState, setAuthState] = useState<AuthState>({
-        isAuthenticated: false,
-        user: null,
-        token: null
-    });
+// Auth Guard Component - NEW
+const AuthGuard: React.FC = () => {
+    const { isAuthenticated, isLoading } = useAuth();
 
-    // Check for stored auth on mount
-    useEffect(() => {
-        const storedToken = localStorage.getItem('auth-token');
-        const storedUser = localStorage.getItem('auth-user');
-
-        if (storedToken && storedUser) {
-            try {
-                const user = JSON.parse(storedUser);
-                setAuthState({
-                    isAuthenticated: true,
-                    user,
-                    token: storedToken
-                });
-            } catch (error) {
-                console.error('Failed to parse stored auth data:', error);
-                localStorage.removeItem('auth-token');
-                localStorage.removeItem('auth-user');
-            }
-        }
-    }, []);
-
-    // Authentication handlers
-    const handleLogin = useCallback((token: string, user: { id: string; name: string; email: string }) => {
-        setAuthState({
-            isAuthenticated: true,
-            user,
-            token
-        });
-
-        localStorage.setItem('auth-token', token);
-        localStorage.setItem('auth-user', JSON.stringify(user));
-    }, []);
-
-    const handleLogout = useCallback(() => {
-        setAuthState({
-            isAuthenticated: false,
-            user: null,
-            token: null
-        });
-
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('auth-user');
-    }, []);
-
-    // If not authenticated, show login page
-    if (!authState.isAuthenticated) {
-        return <LoginPage onLogin={handleLogin} />;
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
+            </div>
+        );
     }
 
-    // If authenticated, show main app
-    return <MainApp authState={authState} onLogout={handleLogout} />;
-}
+    return isAuthenticated ? <MainApp /> : <LoginPage />;
+};
 
-// Main App Component
-interface MainAppProps {
-    authState: AuthState;
-    onLogout: () => void;
-}
+// Main App Component (renamed from original App function)
+function MainApp() {
+    // Get auth info from context - NEW
+    const { user, logout } = useAuth();
 
-function MainApp({ authState, onLogout }: MainAppProps) {
     // App Settings State
     const [appSettings, setAppSettings] = useState<AppSettings>({
         defaultPriority: 'medium',
@@ -190,9 +132,6 @@ function MainApp({ authState, onLogout }: MainAppProps) {
     const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
     const [deletingTodos, setDeletingTodos] = useState<string[]>([]);
 
-    // Refs - removed unused searchInputRef
-    // const searchInputRef = useRef<HTMLInputElement>(null);
-
     // Debounced search
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -212,6 +151,16 @@ function MainApp({ authState, onLogout }: MainAppProps) {
             }
         }
     }, [setTheme]);
+
+    // Handle logout - UPDATED to use AuthContext
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+            // AuthContext will handle clearing tokens
+        }
+    };
 
     // Handle settings change from Settings component
     const handleSettingsChange = useCallback((newSettings: AppSettings) => {
@@ -426,15 +375,6 @@ function MainApp({ authState, onLogout }: MainAppProps) {
         setSelectedTodos(newSelected);
     };
 
-    // Handle select all - removed as not used in current BulkActions interface
-    // const handleSelectAll = () => {
-    //     if (selectedTodos.size === todos.length) {
-    //         setSelectedTodos(new Set());
-    //     } else {
-    //         setSelectedTodos(new Set(todos.map(t => t.id)));
-    //     }
-    // };
-
     return (
         <div className={`min-h-screen transition-colors duration-300 ${
             isDarkMode
@@ -454,7 +394,7 @@ function MainApp({ authState, onLogout }: MainAppProps) {
                             onAddTodo={() => setIsAddModalOpen(true)}
                         />
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Welcome back, {authState.user?.name}!
+                            Welcome back, {user?.name}! {/* UPDATED to use AuthContext user */}
                         </p>
                     </div>
 
@@ -504,10 +444,10 @@ function MainApp({ authState, onLogout }: MainAppProps) {
                             <SettingsIcon className="w-4 h-4" />
                         </Button>
 
-                        {/* Logout */}
+                        {/* Logout - UPDATED to use AuthContext */}
                         <Button
                             variant="outline"
-                            onClick={onLogout}
+                            onClick={handleLogout}
                             className="p-2 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900 dark:hover:border-red-700"
                         >
                             <LogOut className="w-4 h-4" />
@@ -669,6 +609,15 @@ function MainApp({ authState, onLogout }: MainAppProps) {
                 />
             </div>
         </div>
+    );
+}
+
+// Root App Component with AuthProvider - NEW
+function App() {
+    return (
+        <AuthProvider>
+            <AuthGuard />
+        </AuthProvider>
     );
 }
 
