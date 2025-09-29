@@ -260,7 +260,7 @@ export function AdvancedFiltersModal({
                                 Priority Levels
                             </label>
                             <div className="flex gap-3">
-                                {(['low', 'medium', 'high'] as const).map((priority) => (
+                                {(['LOW', 'MEDIUM', 'HIGH'] as const).map((priority) => (
                                     <label key={priority} className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -275,8 +275,8 @@ export function AdvancedFiltersModal({
                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${
-                                            priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
-                                                priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                            priority === 'HIGH' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
+                                                priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
                                                     'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
                                         }`}>
                       {priority}

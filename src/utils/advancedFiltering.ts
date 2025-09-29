@@ -158,7 +158,7 @@ export class AdvancedFilterEngine {
                     comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
                     break;
                 case 'priority':
-                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 };
                     comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
                     break;
                 case 'dueDate':

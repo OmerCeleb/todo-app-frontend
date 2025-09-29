@@ -34,25 +34,25 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Go through completed tasks from yesterday and prepare summary',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'List 2-3 main tasks for today with time estimates',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'Identify any dependencies or blockers that need team help',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'Update JIRA/project management tool with current status',
-                priority: 'low',
+                priority: 'LOW',
                 category: 'Development',
                 dueDate: ''
             }
@@ -77,31 +77,31 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Ensure code meets functional requirements',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'Verify unit tests exist and cover main scenarios',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Testing',
                 dueDate: ''
             },
             {
                 description: 'Check if code is properly documented',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Documentation',
                 dueDate: ''
             },
             {
                 description: 'Test with invalid inputs and boundary conditions',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Testing',
                 dueDate: ''
             },
             {
                 description: 'Provide clear, actionable feedback for improvements',
-                priority: 'low',
+                priority: 'LOW',
                 category: 'Development',
                 dueDate: ''
             }
@@ -128,43 +128,43 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Document feature requirements and acceptance criteria',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Planning',
                 dueDate: ''
             },
             {
                 description: 'Design technical approach and architecture',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Architecture',
                 dueDate: ''
             },
             {
                 description: 'Set up branch and development environment',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'Implement main feature functionality',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Development',
                 dueDate: ''
             },
             {
                 description: 'Write unit and integration tests',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Testing',
                 dueDate: ''
             },
             {
                 description: 'Update README and API documentation',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Documentation',
                 dueDate: ''
             },
             {
                 description: 'Create PR with detailed description',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Development',
                 dueDate: ''
             }
@@ -191,31 +191,31 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Research similar components in design systems',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Research',
                 dueDate: ''
             },
             {
                 description: 'Sketch low-fidelity wireframes',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Design',
                 dueDate: ''
             },
             {
                 description: 'Create different state variations (hover, active, disabled)',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Design',
                 dueDate: ''
             },
             {
                 description: 'Build clickable prototype in Figma',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Design',
                 dueDate: ''
             },
             {
                 description: 'Share with team for feedback and iteration',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Design',
                 dueDate: ''
             }
@@ -242,31 +242,31 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Review current project progress and milestones',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Business',
                 dueDate: ''
             },
             {
                 description: 'Create structured meeting agenda with time slots',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Planning',
                 dueDate: ''
             },
             {
                 description: 'Prepare demos, reports, and visual materials',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Business',
                 dueDate: ''
             },
             {
                 description: 'Think through potential client questions and concerns',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Planning',
                 dueDate: ''
             },
             {
                 description: 'Define clear meeting objectives and desired outcomes',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Business',
                 dueDate: ''
             }
@@ -294,37 +294,37 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Read documentation and understand core concepts',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Personal',
                 dueDate: ''
             },
             {
                 description: 'Find tutorials, courses, and practice materials',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Personal',
                 dueDate: ''
             },
             {
                 description: 'Install tools and set up development environment',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Personal',
                 dueDate: ''
             },
             {
                 description: 'Build a small project to practice concepts',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Personal',
                 dueDate: ''
             },
             {
                 description: 'Join forums, Discord, or community groups',
-                priority: 'low',
+                priority: 'LOW',
                 category: 'Personal',
                 dueDate: ''
             },
             {
                 description: 'Write blog post or notes about key learnings',
-                priority: 'medium',
+                priority: 'MEDIUM',
                 category: 'Personal',
                 dueDate: ''
             }
@@ -353,43 +353,43 @@ export const predefinedTemplates: TodoTemplate[] = [
         tasks: [
             {
                 description: 'Run full test suite and ensure all tests pass',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Testing',
                 dueDate: ''
             },
             {
                 description: 'Create backup of current production version',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'DevOps',
                 dueDate: ''
             },
             {
                 description: 'Deploy changes to staging environment',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'DevOps',
                 dueDate: ''
             },
             {
                 description: 'Test all critical functionality in staging',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'Testing',
                 dueDate: ''
             },
             {
                 description: 'Deploy to production environment',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'DevOps',
                 dueDate: ''
             },
             {
                 description: 'Monitor logs, metrics, and user feedback',
-                priority: 'high',
+                priority: 'HIGH',
                 category: 'DevOps',
                 dueDate: ''
             },
             {
                 description: 'Update deployment logs and version documentation',
-                priority: 'low',
+                priority: 'LOW',
                 category: 'Documentation',
                 dueDate: ''
             }

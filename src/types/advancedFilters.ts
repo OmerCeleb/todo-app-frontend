@@ -16,7 +16,7 @@ export interface AdvancedFilterOptions {
     excludeText: string;
 
     // Multi-select filters
-    priorities: ('low' | 'medium' | 'high')[];
+    priorities: ('LOW' | 'MEDIUM' | 'HIGH')[];
     categories: string[];
     tags: string[];
 

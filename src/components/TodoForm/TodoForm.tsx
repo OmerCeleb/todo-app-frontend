@@ -9,7 +9,7 @@ export interface Todo {
     title: string;
     description?: string;
     completed: boolean;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';  // Uppercase
     category?: string;
     createdAt: string;
     updatedAt: string;
@@ -19,7 +19,7 @@ export interface Todo {
 export interface TodoFormData {
     title: string;
     description: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
     category: string;
     dueDate: string;
 }
@@ -60,9 +60,9 @@ function SimpleModal({ isOpen, onClose, title, children }: {
 }
 
 const priorityOptions = [
-    { value: 'low', label: 'Low Priority' },
-    { value: 'medium', label: 'Medium Priority' },
-    { value: 'high', label: 'High Priority' },
+    { value: 'LOW', label: 'Low Priority' },
+    { value: 'MEDIUM', label: 'Medium Priority' },
+    { value: 'HIGH', label: 'High Priority' },
 ];
 
 const categoryOptions = [
@@ -79,7 +79,7 @@ export function TodoForm({ isOpen, onClose, onSubmit, todo, mode = 'add' }: Todo
     const [formData, setFormData] = useState<TodoFormData>({
         title: '',
         description: '',
-        priority: 'medium',
+        priority: 'MEDIUM',
         category: '',
         dueDate: '',
     });
@@ -99,7 +99,7 @@ export function TodoForm({ isOpen, onClose, onSubmit, todo, mode = 'add' }: Todo
                 setFormData({
                     title: '',
                     description: '',
-                    priority: 'medium',
+                    priority: 'MEDIUM',
                     category: '',
                     dueDate: '',
                 });

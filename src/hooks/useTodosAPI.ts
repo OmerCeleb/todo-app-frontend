@@ -1,66 +1,100 @@
-// src/hooks/useTodosAPI.ts - COMPLETE WITH REORDER
-import { useState, useCallback } from 'react';
-// import { todoService } from '../services/todoService'; // Commented out for now
+// src/hooks/useTodosAPI.ts
+import { useState, useCallback, useEffect } from 'react';
+import { todoService } from '../services/todoService';
 import type { Todo, TodoFormData } from '../components/TodoForm';
-import type { FilterOptions } from './useTodos';
+
+export interface FilterOptions {
+    status: 'all' | 'active' | 'completed';
+    priority: 'all' | 'low' | 'medium' | 'high';
+    category: string;
+    dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
+    sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';
+    sortOrder: 'asc' | 'desc';
+}
 
 interface UseTodosAPIReturn {
-    // Data
     todos: Todo[];
     categories: string[];
     filters: FilterOptions;
-
-    // State
     loading: boolean;
     error: string | null;
     isRefreshing: boolean;
-
-    // Operations
     createTodo: (data: TodoFormData) => Promise<void>;
     updateTodo: (id: string, data: TodoFormData) => Promise<void>;
     deleteTodo: (id: string) => Promise<void>;
     toggleTodo: (id: string) => Promise<void>;
     bulkDelete: (ids: string[]) => Promise<void>;
-    reorderTodos: (reorderedTodos: Todo[]) => Promise<void>; // ← EKLENDI!
-
-    // Filtering & Sorting
+    reorderTodos: (reorderedTodos: Todo[]) => Promise<void>;
     setFilters: (filters: FilterOptions) => void;
     searchTodos: (query: string) => Todo[];
-
-    // Utilities
     refreshTodos: () => Promise<void>;
     getStats: () => { total: number; completed: number; active: number; overdue: number };
     clearError: () => void;
 }
 
+const defaultFilters: FilterOptions = {
+    status: 'all',
+    priority: 'all',
+    category: 'all',
+    dateFilter: 'all',
+    sortBy: 'created',
+    sortOrder: 'desc'
+};
+
 export function useTodosAPI(): UseTodosAPIReturn {
-    // For now, we'll use the existing useTodos as fallback
-    // When backend is ready, we'll implement the actual API calls
-    const useTodosModule = require('./useTodos');
-    const useTodosDefault = useTodosModule.default || useTodosModule.useTodos;
-
-    const {
-        todos,
-        categories,
-        filters,
-        addTodo,
-        updateTodo: baseUpdateTodo,
-        deleteTodo: baseDeleteTodo,
-        toggleTodo: baseToggleTodo,
-        setFilters,
-        searchTodos,
-        getStats,
-        setTodos // ← BU GEREKLİ! useTodos hook'undan setTodos'u al
-    } = useTodosDefault();
-
+    const [todos, setTodos] = useState<Todo[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [filters, setFilters] = useState<FilterOptions>(defaultFilters);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    useEffect(() => {
+        loadTodos();
+    }, []);
+
+    useEffect(() => {
+        loadCategories();
+    }, [todos]);
+
+    const loadTodos = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await todoService.getTodos({
+                status: filters.status !== 'all' ? filters.status : undefined,
+                priority: filters.priority !== 'all' ? filters.priority : undefined,
+                category: filters.category !== 'all' ? filters.category : undefined,
+            });
+            setTodos(response.data); // .data ile unwrap et
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load todos');
+            console.error('Failed to load todos:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [filters]);
+
+    const loadCategories = useCallback(async () => {
+        try {
+            const response = await todoService.getCategories();
+            setCategories(response.data); // .data ile unwrap et
+        } catch (err) {
+            console.error('Failed to load categories:', err);
+        }
+    }, []);
+
     const createTodo = useCallback(async (data: TodoFormData) => {
         setLoading(true);
         try {
-            addTodo(data);
+            const response = await todoService.createTodo({
+                title: data.title,
+                description: data.description,
+                priority: data.priority,
+                category: data.category,
+                dueDate: data.dueDate
+            });
+            setTodos(prev => [response.data, ...prev]); // .data ile unwrap et
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create todo');
@@ -68,12 +102,19 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [addTodo]);
+    }, []);
 
     const updateTodo = useCallback(async (id: string, data: TodoFormData) => {
         setLoading(true);
         try {
-            baseUpdateTodo(data, id);
+            const response = await todoService.updateTodo(id, {
+                title: data.title,
+                description: data.description,
+                priority: data.priority,
+                category: data.category,
+                dueDate: data.dueDate
+            });
+            setTodos(prev => prev.map(todo => todo.id === id ? response.data : todo)); // .data
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update todo');
@@ -81,12 +122,13 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [baseUpdateTodo]);
+    }, []);
 
     const deleteTodo = useCallback(async (id: string) => {
         setLoading(true);
         try {
-            baseDeleteTodo(id);
+            await todoService.deleteTodo(id);
+            setTodos(prev => prev.filter(todo => todo.id !== id));
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete todo');
@@ -94,12 +136,16 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [baseDeleteTodo]);
+    }, []);
 
     const toggleTodo = useCallback(async (id: string) => {
         setLoading(true);
         try {
-            baseToggleTodo(id);
+            const todo = todos.find(t => t.id === id);
+            if (!todo) return;
+
+            const response = await todoService.toggleTodo(id, !todo.completed);
+            setTodos(prev => prev.map(t => t.id === id ? response.data : t)); // .data
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to toggle todo');
@@ -107,14 +153,13 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [baseToggleTodo]);
+    }, [todos]);
 
     const bulkDelete = useCallback(async (ids: string[]) => {
         setLoading(true);
         try {
-            for (const id of ids) {
-                baseDeleteTodo(id);
-            }
+            await todoService.bulkDelete(ids);
+            setTodos(prev => prev.filter(todo => !ids.includes(todo.id)));
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete todos');
@@ -122,39 +167,58 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [baseDeleteTodo]);
+    }, []);
 
-    // ← YENİ: reorderTodos fonksiyonu
     const reorderTodos = useCallback(async (reorderedTodos: Todo[]) => {
-        setLoading(true);
         try {
-            // State'i hemen güncelle (optimistic update)
-            if (setTodos) {
-                setTodos(reorderedTodos);
-            }
+            // Optimistic update
+            setTodos(reorderedTodos);
 
-            // Backend hazır olduğunda uncomment et:
-            // await todoService.reorderTodos(reorderedTodos.map((todo, index) => ({ 
-            //     id: todo.id, 
-            //     order: index 
-            // })));
+            // Backend'e gönder (şimdilik comment'te bırak)
+            // const reorderData = reorderedTodos.map((todo, index) => ({
+            //     id: todo.id,
+            //     order: index
+            // }));
+            // await todoService.reorderTodos(reorderData);
 
             setError(null);
-            console.log('✅ Todos reordered successfully');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to reorder todos');
+            await loadTodos();
             throw err;
-        } finally {
-            setLoading(false);
         }
-    }, [setTodos]);
+    }, [loadTodos]);
 
     const refreshTodos = useCallback(async () => {
         setIsRefreshing(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsRefreshing(false);
-    }, []);
+        try {
+            await loadTodos();
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [loadTodos]);
+
+    const searchTodos = useCallback((query: string): Todo[] => {
+        if (!query.trim()) return todos;
+
+        const lowercaseQuery = query.toLowerCase();
+        return todos.filter(todo =>
+            todo.title.toLowerCase().includes(lowercaseQuery) ||
+            todo.description?.toLowerCase().includes(lowercaseQuery) ||
+            todo.category?.toLowerCase().includes(lowercaseQuery)
+        );
+    }, [todos]);
+
+    const getStats = useCallback(() => {
+        const total = todos.length;
+        const completed = todos.filter(t => t.completed).length;
+        const active = total - completed;
+        const overdue = todos.filter(t =>
+            !t.completed && t.dueDate && new Date(t.dueDate) < new Date()
+        ).length;
+
+        return { total, completed, active, overdue };
+    }, [todos]);
 
     const clearError = useCallback(() => {
         setError(null);

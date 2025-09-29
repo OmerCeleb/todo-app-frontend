@@ -5,7 +5,7 @@ import type { Todo } from '../components/TodoForm';
 export interface TodoCreateRequest {
     title: string;
     description?: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
     category?: string;
     dueDate?: string;
 }
@@ -46,11 +46,23 @@ class TodoService {
     }
 
     async createTodo(data: TodoCreateRequest) {
-        return apiService.post<Todo>(this.basePath, data);
+        // Priority'yi uppercase'e çevir ve date format düzelt
+        return apiService.post<Todo>(this.basePath, {
+            title: data.title,
+            description: data.description,
+            priority: data.priority.toUpperCase(),
+            category: data.category,
+            dueDate: data.dueDate ? `${data.dueDate}T23:59:59` : undefined
+        });
     }
 
     async updateTodo(id: string, data: TodoUpdateRequest) {
-        return apiService.put<Todo>(`${this.basePath}/${id}`, data);
+        // Priority ve date format düzelt
+        return apiService.put<Todo>(`${this.basePath}/${id}`, {
+            ...data,
+            priority: data.priority ? data.priority.toUpperCase() : undefined,
+            dueDate: data.dueDate ? `${data.dueDate}T23:59:59` : undefined
+        });
     }
 
     async deleteTodo(id: string) {

@@ -115,7 +115,7 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
 
     // Generate priority distribution data
     const priorityData = useMemo((): PriorityData[] => {
-        const priorities = { high: 0, medium: 0, low: 0 };
+        const priorities = { HIGH: 0, MEDIUM: 0, LOW: 0 };
 
         todos.forEach(todo => {
             if (!todo.completed) {
@@ -123,26 +123,26 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
             }
         });
 
-        const total = priorities.high + priorities.medium + priorities.low;
+        const total = priorities.HIGH + priorities.MEDIUM + priorities.LOW;
 
         return [
             {
                 name: 'High',
-                value: priorities.high,
+                value: priorities.HIGH,
                 color: '#EF4444',
-                percentage: total > 0 ? Math.round((priorities.high / total) * 100) : 0
+                percentage: total > 0 ? Math.round((priorities.HIGH / total) * 100) : 0
             },
             {
                 name: 'Medium',
-                value: priorities.medium,
+                value: priorities.MEDIUM,
                 color: '#F59E0B',
-                percentage: total > 0 ? Math.round((priorities.medium / total) * 100) : 0
+                percentage: total > 0 ? Math.round((priorities.MEDIUM / total) * 100) : 0
             },
             {
                 name: 'Low',
-                value: priorities.low,
+                value: priorities.LOW,
                 color: '#10B981',
-                percentage: total > 0 ? Math.round((priorities.low / total) * 100) : 0
+                percentage: total > 0 ? Math.round((priorities.LOW / total) * 100) : 0
             }
         ].filter(item => item.value > 0);
     }, [todos]);

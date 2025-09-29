@@ -6,7 +6,7 @@ import { getDateFilters, type DateFilter } from '../utils/dateUtils';
 // FilterOptions interface - MUST match TodoFilters
 export interface FilterOptions {
     status: 'all' | 'active' | 'completed';
-    priority: 'all' | 'low' | 'medium' | 'high';
+    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';  // Backend formatına uygun
     category: string;
     dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
     sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';
@@ -20,7 +20,7 @@ const initialTodos: Todo[] = [
         title: 'Build Modular Todo App',
         description: 'Create a professional todo application with clean architecture',
         completed: false,
-        priority: 'high',
+        priority: 'HIGH',
         category: 'Development',
         createdAt: '2025-01-15T10:00:00Z',
         updatedAt: '2025-01-15T10:00:00Z',
@@ -31,7 +31,7 @@ const initialTodos: Todo[] = [
         title: 'Add Dark Mode',
         description: 'Implement theme switching functionality',
         completed: false,
-        priority: 'medium',
+        priority: 'MEDIUM',
         category: 'Design',
         createdAt: '2025-01-14T09:00:00Z',
         updatedAt: '2025-01-15T14:30:00Z',
@@ -41,7 +41,7 @@ const initialTodos: Todo[] = [
         title: 'Component Separation',
         description: 'Break down App.tsx into modular components',
         completed: true,
-        priority: 'high',
+        priority: 'HIGH',
         category: 'Architecture',
         createdAt: '2025-01-13T15:00:00Z',
         updatedAt: '2025-01-13T15:00:00Z',
@@ -51,7 +51,7 @@ const initialTodos: Todo[] = [
         title: 'Setup Backend API',
         description: 'Create Spring Boot backend with PostgreSQL',
         completed: false,
-        priority: 'high',
+        priority: 'HIGH',
         category: 'Backend',
         createdAt: '2025-01-12T11:00:00Z',
         updatedAt: '2025-01-12T11:00:00Z',
@@ -62,7 +62,7 @@ const initialTodos: Todo[] = [
         title: 'Write Documentation',
         description: 'Add README and API documentation',
         completed: false,
-        priority: 'low',
+        priority: 'LOW',
         category: 'Documentation',
         createdAt: '2025-01-11T16:00:00Z',
         updatedAt: '2025-01-11T16:00:00Z',
@@ -72,7 +72,7 @@ const initialTodos: Todo[] = [
         title: 'Deploy to Production',
         description: 'Deploy app to cloud platform',
         completed: false,
-        priority: 'medium',
+        priority: 'MEDIUM',
         category: 'DevOps',
         createdAt: '2025-01-10T08:00:00Z',
         updatedAt: '2025-01-10T08:00:00Z',
@@ -83,7 +83,7 @@ const initialTodos: Todo[] = [
         title: 'Setup Testing',
         description: 'Add unit and integration tests',
         completed: false,
-        priority: 'medium',
+        priority: 'MEDIUM',
         category: 'Testing',
         createdAt: '2025-01-09T14:00:00Z',
         updatedAt: '2025-01-09T14:00:00Z',
@@ -93,7 +93,7 @@ const initialTodos: Todo[] = [
         title: 'Performance Optimization',
         description: 'Optimize bundle size and loading speed',
         completed: true,
-        priority: 'low',
+        priority: 'LOW',
         category: 'Performance',
         createdAt: '2025-01-08T12:00:00Z',
         updatedAt: '2025-01-08T12:00:00Z',
@@ -103,7 +103,7 @@ const initialTodos: Todo[] = [
         title: 'Meeting with Client',
         description: 'Discuss project requirements and timeline',
         completed: false,
-        priority: 'high',
+        priority: 'HIGH',
         category: 'Business',
         createdAt: '2025-01-07T10:00:00Z',
         updatedAt: '2025-01-07T10:00:00Z',
@@ -114,7 +114,7 @@ const initialTodos: Todo[] = [
         title: 'Review Pull Requests',
         description: 'Review and merge pending pull requests',
         completed: false,
-        priority: 'medium',
+        priority: 'MEDIUM',
         category: 'Development',
         createdAt: '2025-01-06T16:00:00Z',
         updatedAt: '2025-01-06T16:00:00Z',
@@ -190,7 +190,7 @@ export function useTodos() {
                     comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
                     break;
                 case 'priority':
-                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 };
                     comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
                     break;
                 case 'dueDate':
