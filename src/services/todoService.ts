@@ -16,7 +16,7 @@ export interface TodoUpdateRequest extends Partial<TodoCreateRequest> {
 
 export interface TodoFilters {
     status?: 'all' | 'active' | 'completed';
-    priority?: 'all' | 'low' | 'medium' | 'high';
+    priority?: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
     category?: string;
     search?: string;
     page?: number;
@@ -46,18 +46,16 @@ class TodoService {
     }
 
     async createTodo(data: TodoCreateRequest) {
-        // Priority'yi uppercase'e çevir ve date format düzelt
         return apiService.post<Todo>(this.basePath, {
             title: data.title,
             description: data.description,
-            priority: data.priority.toUpperCase(),
+            priority: data.priority,  // toUpperCase() kaldırıldı
             category: data.category,
             dueDate: data.dueDate ? `${data.dueDate}T23:59:59` : undefined
         });
     }
 
     async updateTodo(id: string, data: TodoUpdateRequest) {
-        // Priority ve date format düzelt
         return apiService.put<Todo>(`${this.basePath}/${id}`, {
             ...data,
             priority: data.priority ? data.priority.toUpperCase() : undefined,
@@ -75,6 +73,10 @@ class TodoService {
 
     async bulkDelete(ids: string[]) {
         return apiService.post<void>(`${this.basePath}/bulk-delete`, { ids });
+    }
+
+    async reorderTodos(reorderData: { id: string; order: number }[]) {
+        return apiService.post<void>(`${this.basePath}/reorder`, reorderData);
     }
 
     async getCategories() {

@@ -47,7 +47,7 @@ export function DragDropContext({
         })
     );
 
-    const activeItem = activeId ? todos.find(todo => todo.id === activeId) : null;
+    const activeItem = activeId ? todos.find(todo => String(todo.id) === String(activeId)) : null;
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
@@ -73,8 +73,8 @@ export function DragDropContext({
         }
 
         if (active.id !== over.id) {
-            const oldIndex = todos.findIndex(todo => todo.id === active.id);
-            const newIndex = todos.findIndex(todo => todo.id === over.id);
+            const oldIndex = todos.findIndex(todo => String(todo.id) === String(active.id));
+            const newIndex = todos.findIndex(todo => String(todo.id) === String(over.id));
 
             console.log('🔄 Reordering:', {
                 oldIndex,

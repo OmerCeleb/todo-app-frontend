@@ -5,7 +5,7 @@ import { getDateFilters } from '../../utils/dateUtils';
 
 export interface FilterOptions {
     status: 'all' | 'active' | 'completed';
-    priority: 'all' | 'low' | 'medium' | 'high';
+    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
     category: string;
     dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
     sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';

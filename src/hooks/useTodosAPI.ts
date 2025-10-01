@@ -5,16 +5,24 @@ import type { Todo, TodoFormData } from '../components/TodoForm';
 
 export interface FilterOptions {
     status: 'all' | 'active' | 'completed';
-    priority: 'all' | 'low' | 'medium' | 'high';
+    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
     category: string;
     dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
     sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';
     sortOrder: 'asc' | 'desc';
 }
 
+export interface TodoStats {
+    total: number;
+    completed: number;
+    active: number;
+    overdue: number;
+}
+
 interface UseTodosAPIReturn {
     todos: Todo[];
     categories: string[];
+    stats: TodoStats;
     filters: FilterOptions;
     loading: boolean;
     error: string | null;
@@ -28,7 +36,6 @@ interface UseTodosAPIReturn {
     setFilters: (filters: FilterOptions) => void;
     searchTodos: (query: string) => Todo[];
     refreshTodos: () => Promise<void>;
-    getStats: () => { total: number; completed: number; active: number; overdue: number };
     clearError: () => void;
 }
 
@@ -44,18 +51,39 @@ const defaultFilters: FilterOptions = {
 export function useTodosAPI(): UseTodosAPIReturn {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
+    const [stats, setStats] = useState<TodoStats>({ total: 0, completed: 0, active: 0, overdue: 0 });
     const [filters, setFilters] = useState<FilterOptions>(defaultFilters);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    useEffect(() => {
-        loadTodos();
-    }, []);
-
-    useEffect(() => {
-        loadCategories();
+    const loadStats = useCallback(async () => {
+        try {
+            const response = await todoService.getStats();
+            setStats(response.data);
+            console.log('📊 Stats loaded:', response.data);
+        } catch (err) {
+            console.error('Failed to load stats:', err);
+            // Fallback: local hesaplama
+            const total = todos.length;
+            const completed = todos.filter(t => t.completed).length;
+            const active = total - completed;
+            const overdue = todos.filter(t =>
+                !t.completed && t.dueDate && new Date(t.dueDate) < new Date()
+            ).length;
+            setStats({ total, completed, active, overdue });
+        }
     }, [todos]);
+
+    const loadCategories = useCallback(async () => {
+        try {
+            const response = await todoService.getCategories();
+            setCategories(response.data);
+            console.log('✅ Categories loaded:', response.data);
+        } catch (err) {
+            console.error('Failed to load categories:', err);
+        }
+    }, []);
 
     const loadTodos = useCallback(async () => {
         setLoading(true);
@@ -65,7 +93,7 @@ export function useTodosAPI(): UseTodosAPIReturn {
                 priority: filters.priority !== 'all' ? filters.priority : undefined,
                 category: filters.category !== 'all' ? filters.category : undefined,
             });
-            setTodos(response.data); // .data ile unwrap et
+            setTodos(response.data);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load todos');
@@ -75,14 +103,24 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [filters]);
 
-    const loadCategories = useCallback(async () => {
-        try {
-            const response = await todoService.getCategories();
-            setCategories(response.data); // .data ile unwrap et
-        } catch (err) {
-            console.error('Failed to load categories:', err);
-        }
+    // İlk yüklemede todos, categories ve stats'i yükle
+    useEffect(() => {
+        loadTodos();
+        loadCategories();
+        loadStats();
     }, []);
+
+    // Filters değiştiğinde sadece todos'u yükle
+    useEffect(() => {
+        loadTodos();
+    }, [filters]);
+
+    // Todos değiştiğinde stats'i güncelle
+    useEffect(() => {
+        if (todos.length > 0) {
+            loadStats();
+        }
+    }, [todos.length, loadStats]);
 
     const createTodo = useCallback(async (data: TodoFormData) => {
         setLoading(true);
@@ -94,7 +132,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
                 category: data.category,
                 dueDate: data.dueDate
             });
-            setTodos(prev => [response.data, ...prev]); // .data ile unwrap et
+            setTodos(prev => [response.data, ...prev]);
+            await loadCategories();
+            await loadStats();
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create todo');
@@ -102,7 +142,7 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loadCategories, loadStats]);
 
     const updateTodo = useCallback(async (id: string, data: TodoFormData) => {
         setLoading(true);
@@ -114,7 +154,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
                 category: data.category,
                 dueDate: data.dueDate
             });
-            setTodos(prev => prev.map(todo => todo.id === id ? response.data : todo)); // .data
+            setTodos(prev => prev.map(todo => todo.id === id ? response.data : todo));
+            await loadCategories();
+            await loadStats();
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update todo');
@@ -122,13 +164,15 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loadCategories, loadStats]);
 
     const deleteTodo = useCallback(async (id: string) => {
         setLoading(true);
         try {
             await todoService.deleteTodo(id);
             setTodos(prev => prev.filter(todo => todo.id !== id));
+            await loadCategories();
+            await loadStats();
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete todo');
@@ -136,7 +180,7 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loadCategories, loadStats]);
 
     const toggleTodo = useCallback(async (id: string) => {
         setLoading(true);
@@ -145,7 +189,8 @@ export function useTodosAPI(): UseTodosAPIReturn {
             if (!todo) return;
 
             const response = await todoService.toggleTodo(id, !todo.completed);
-            setTodos(prev => prev.map(t => t.id === id ? response.data : t)); // .data
+            setTodos(prev => prev.map(t => t.id === id ? response.data : t));
+            await loadStats();
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to toggle todo');
@@ -153,13 +198,15 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, [todos]);
+    }, [todos, loadStats]);
 
     const bulkDelete = useCallback(async (ids: string[]) => {
         setLoading(true);
         try {
             await todoService.bulkDelete(ids);
             setTodos(prev => prev.filter(todo => !ids.includes(todo.id)));
+            await loadCategories();
+            await loadStats();
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete todos');
@@ -167,20 +214,16 @@ export function useTodosAPI(): UseTodosAPIReturn {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loadCategories, loadStats]);
 
     const reorderTodos = useCallback(async (reorderedTodos: Todo[]) => {
         try {
-            // Optimistic update
             setTodos(reorderedTodos);
-
-            // Backend'e gönder (şimdilik comment'te bırak)
-            // const reorderData = reorderedTodos.map((todo, index) => ({
-            //     id: todo.id,
-            //     order: index
-            // }));
-            // await todoService.reorderTodos(reorderData);
-
+            const reorderData = reorderedTodos.map((todo, index) => ({
+                id: todo.id,
+                order: index
+            }));
+            await todoService.reorderTodos(reorderData);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to reorder todos');
@@ -193,10 +236,12 @@ export function useTodosAPI(): UseTodosAPIReturn {
         setIsRefreshing(true);
         try {
             await loadTodos();
+            await loadCategories();
+            await loadStats();
         } finally {
             setIsRefreshing(false);
         }
-    }, [loadTodos]);
+    }, [loadTodos, loadCategories, loadStats]);
 
     const searchTodos = useCallback((query: string): Todo[] => {
         if (!query.trim()) return todos;
@@ -209,17 +254,6 @@ export function useTodosAPI(): UseTodosAPIReturn {
         );
     }, [todos]);
 
-    const getStats = useCallback(() => {
-        const total = todos.length;
-        const completed = todos.filter(t => t.completed).length;
-        const active = total - completed;
-        const overdue = todos.filter(t =>
-            !t.completed && t.dueDate && new Date(t.dueDate) < new Date()
-        ).length;
-
-        return { total, completed, active, overdue };
-    }, [todos]);
-
     const clearError = useCallback(() => {
         setError(null);
     }, []);
@@ -227,6 +261,7 @@ export function useTodosAPI(): UseTodosAPIReturn {
     return {
         todos,
         categories,
+        stats,
         filters,
         loading,
         error,
@@ -240,7 +275,6 @@ export function useTodosAPI(): UseTodosAPIReturn {
         setFilters,
         searchTodos,
         refreshTodos,
-        getStats,
         clearError,
     };
 }

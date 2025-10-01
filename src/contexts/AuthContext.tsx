@@ -40,23 +40,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initializeAuth = async () => {
         setIsLoading(true);
         try {
-            // Check if we have valid tokens
-            const isValid = await authService.validateAndRefreshToken();
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
 
-            if (isValid) {
-                // Get current user from backend
-                const currentUser = await authService.getCurrentUser();
-                setUser(currentUser);
+            if (token && userStr) {
+                const userData = JSON.parse(userStr);
+                setUser(userData);
             }
         } catch (error) {
-            console.warn('Auth initialization failed:', error);
-            // Clear invalid tokens
-            await authService.logout();
+            console.error('Auth initialization failed:', error);
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
         } finally {
             setIsLoading(false);
         }
     };
-
     /**
      * Login user
      */
@@ -66,6 +64,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         try {
             const response = await authService.login(credentials);
+
+            // localStorage'a kaydet
+            localStorage.setItem('authToken', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+
             setUser(response.user);
         } catch (error) {
             const errorMessage = error instanceof ApiError
@@ -77,6 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setIsLoading(false);
         }
     };
+
 
     /**
      * Register new user

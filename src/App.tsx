@@ -99,7 +99,7 @@ function MainApp() {
         reorderTodos: apiReorderTodos,
         setFilters,
         refreshTodos,
-        getStats
+        stats,
     } = useTodosAPI();
 
     // Notifications
@@ -457,10 +457,9 @@ function MainApp() {
 
                 {/* Dashboard View */}
                 {viewMode === 'dashboard' && (
-                    <Dashboard
-                        stats={getStats()}
-                        todos={todos}
-                    />
+                    <Dashboard stats={stats}
+                               todos={todos} />
+
                 )}
 
                 {/* List View */}
