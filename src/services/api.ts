@@ -1,12 +1,18 @@
 // src/services/api.ts
 import { env } from '../config/env';
 
+/**
+ * API Response interface (for reference, but we return T directly now)
+ */
 export interface ApiResponse<T> {
     data: T;
     message?: string;
     success?: boolean;
 }
 
+/**
+ * Paginated response interface
+ */
 export interface PaginatedResponse<T> {
     data: T[];
     pagination: {
@@ -17,6 +23,10 @@ export interface PaginatedResponse<T> {
     };
 }
 
+/**
+ * API Service
+ * Handles all HTTP requests to the backend API
+ */
 class ApiService {
     private baseURL: string;
     private timeout: number;
@@ -26,13 +36,17 @@ class ApiService {
         this.timeout = env.API_TIMEOUT;
     }
 
+    /**
+     * Make HTTP request with error handling
+     * @returns Promise with the unwrapped data (T), not ApiResponse<T>
+     */
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
-    ): Promise<ApiResponse<T>> {
+    ): Promise<T> {
         const url = `${this.baseURL}${endpoint}`;
 
-        // Token'ı localStorage'dan al
+        // Get token from localStorage
         const token = localStorage.getItem('authToken');
 
         const headers: HeadersInit = {
@@ -40,7 +54,7 @@ class ApiService {
             ...options.headers,
         };
 
-        // Token varsa Authorization header'ı ekle
+        // Add Authorization header if token exists
         if (token) {
             (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
         }
@@ -61,62 +75,86 @@ class ApiService {
 
             clearTimeout(timeoutId);
 
+            // Handle 401 Unauthorized - redirect to login
+            if (response.status === 401) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                throw new Error('Unauthorized - Please login again');
+            }
+
+            // Handle errors
             if (!response.ok) {
-                // 401 durumunda token'ı temizle ve login'e yönlendir
-                if (response.status === 401) {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/login';
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            // Handle empty responses (like DELETE)
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return undefined as T;
             }
 
             const data = await response.json();
 
-            // Backend'den gelen response farklı formatlarda olabilir
-            // Eğer data zaten istediğimiz formatta ise direkt dön
-            if (data && typeof data === 'object' && !Array.isArray(data)) {
-                return { data } as ApiResponse<T>;
-            }
-
-            // Eğer response direkt array veya primitive ise sarmalayarak dön
-            return { data: data as T } as ApiResponse<T>;
+            // IMPORTANT: Backend returns data directly (not wrapped in {data: ...})
+            // So we just return the parsed JSON as-is
+            return data as T;
 
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`API request failed: ${error.message}`);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout');
+                }
+                throw error;
             }
             throw new Error('Unknown API error');
         }
     }
 
-    // GET request
-    async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    /**
+     * GET request
+     * @returns Promise with unwrapped data (T)
+     */
+    async get<T>(endpoint: string): Promise<T> {
         return this.request<T>(endpoint, { method: 'GET' });
     }
 
-    // POST request
-    async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+    /**
+     * POST request
+     * @returns Promise with unwrapped data (T)
+     */
+    async post<T>(endpoint: string, data: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: JSON.stringify(data),
         });
     }
 
-    // PUT request
-    async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+    /**
+     * PUT request
+     * @returns Promise with unwrapped data (T)
+     */
+    async put<T>(endpoint: string, data: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
     }
 
-    // DELETE request
-    async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+    /**
+     * DELETE request
+     * @returns Promise with unwrapped data (T)
+     */
+    async delete<T>(endpoint: string): Promise<T> {
         return this.request<T>(endpoint, { method: 'DELETE' });
     }
 
-    // PATCH request
-    async patch<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+    /**
+     * PATCH request
+     * @returns Promise with unwrapped data (T)
+     */
+    async patch<T>(endpoint: string, data: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'PATCH',
             body: JSON.stringify(data),
@@ -124,4 +162,5 @@ class ApiService {
     }
 }
 
+// Export singleton instance
 export const apiService = new ApiService();

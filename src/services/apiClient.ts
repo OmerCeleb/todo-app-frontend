@@ -9,11 +9,13 @@ export interface ApiResponse<T = any> {
 
 export class ApiError extends Error {
     public status?: number;
+    public data?: any;
 
-    constructor(message: string, status?: number) {
+    constructor(message: string, status?: number, data?: any) {
         super(message);
         this.name = 'ApiError';
         this.status = status;
+        this.data = data;
     }
 }
 
@@ -91,7 +93,7 @@ class ApiClient {
 
             clearTimeout(timeoutId);
 
-            // Handle different response types
+            // Parse response
             let responseData: any;
             const contentType = response.headers.get('content-type');
 
@@ -101,27 +103,50 @@ class ApiClient {
                 responseData = await response.text();
             }
 
+            // Handle errors
             if (!response.ok) {
+                // Extract error message from different possible response formats
+                let errorMessage = 'An error occurred';
+
+                if (typeof responseData === 'object') {
+                    // Try different error message fields
+                    errorMessage = responseData.message
+                        || responseData.error
+                        || responseData.errors?.[0]?.message
+                        || `HTTP error! status: ${response.status}`;
+                } else if (typeof responseData === 'string') {
+                    errorMessage = responseData;
+                }
+
+                console.error('API Error Response:', {
+                    status: response.status,
+                    data: responseData,
+                    message: errorMessage
+                });
+
                 throw new ApiError(
-                    responseData?.message || `HTTP error! status: ${response.status}`,
-                    response.status
+                    errorMessage,
+                    response.status,
+                    responseData
                 );
             }
 
             return responseData;
         } catch (error) {
+            // If it's already an ApiError, rethrow it
             if (error instanceof ApiError) {
                 throw error;
             }
 
+            // Handle other error types
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
-                    throw new ApiError('Request timeout');
+                    throw new ApiError('Request timeout', 408);
                 }
-                throw new ApiError(`Network error: ${error.message}`);
+                throw new ApiError(`Network error: ${error.message}`, 0);
             }
 
-            throw new ApiError('Unknown error occurred');
+            throw new ApiError('Unknown error occurred', 0);
         }
     }
 

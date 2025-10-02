@@ -1,46 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, AlertCircle, CheckCircle2, User, Loader2, CheckSquare, Shield, ArrowRight } from 'lucide-react';
+// src/components/Auth/LoginPage.tsx
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-
-interface LoginFormData {
-    email: string;
-    password: string;
-}
-
-interface RegisterFormData extends LoginFormData {
-    confirmPassword: string;
-    name: string;
-}
+import { CheckSquare, Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, X } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
-    const { login, register, isLoading, error, clearError } = useAuth();
-
+    const { login, register, error, clearError, isLoading } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [successMessage, setSuccessMessage] = useState('');
 
-    const [loginData, setLoginData] = useState<LoginFormData>({
+    const [loginData, setLoginData] = useState({
         email: '',
         password: ''
     });
 
-    const [registerData, setRegisterData] = useState<RegisterFormData>({
+    const [registerData, setRegisterData] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
     });
 
-    // Clear messages when switching between login/register
-    useEffect(() => {
-        setValidationErrors({});
-        setSuccessMessage('');
-        clearError();
-    }, [isLogin, clearError]);
-
-    // Client-side validation
+    // Validate login form
     const validateLoginForm = (): boolean => {
         const errors: Record<string, string> = {};
 
@@ -223,90 +206,89 @@ const LoginPage: React.FC = () => {
                     </p>
                 </div>
 
-                {/* Main Card */}
-                <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
-                    {/* Toggle Buttons */}
-                    <div className="flex bg-gray-100 rounded-2xl p-1 mb-8">
+                {/* Form Container */}
+                <div className="bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-100">
+                    {/* Tab Switcher */}
+                    <div className="flex bg-gray-100 rounded-xl p-1">
                         <button
-                            onClick={() => setIsLogin(true)}
-                            disabled={isLoading}
-                            className={`flex-1 py-3 px-6 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${
+                            type="button"
+                            onClick={() => isLogin || handleToggleMode()}
+                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
                                 isLogin
-                                    ? 'bg-white text-blue-600 shadow-lg transform scale-105'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    ? 'bg-white text-blue-600 shadow-md'
+                                    : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
-                            <div className="flex items-center justify-center gap-2">
-                                <LogIn className="w-4 h-4" />
-                                Sign In
-                            </div>
+                            Sign In
                         </button>
                         <button
-                            onClick={() => setIsLogin(false)}
-                            disabled={isLoading}
-                            className={`flex-1 py-3 px-6 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${
+                            type="button"
+                            onClick={() => !isLogin || handleToggleMode()}
+                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
                                 !isLogin
-                                    ? 'bg-white text-blue-600 shadow-lg transform scale-105'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    ? 'bg-white text-blue-600 shadow-md'
+                                    : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
-                            <div className="flex items-center justify-center gap-2">
-                                <UserPlus className="w-4 h-4" />
-                                Sign Up
-                            </div>
+                            Sign Up
                         </button>
                     </div>
 
-                    {/* Success Message */}
-                    {successMessage && (
-                        <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-400 rounded-lg animate-in slide-in-from-top duration-300">
-                            <div className="flex items-center">
-                                <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                <p className="ml-3 text-sm text-green-700 font-medium">{successMessage}</p>
+                    {/* Global Error Message */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start space-x-3 animate-slideDown">
+                            <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium">
+                                    {getFormattedError(error)}
+                                </p>
                             </div>
+                            <button
+                                onClick={clearError}
+                                className="text-red-600 hover:text-red-800 transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
                     )}
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg animate-in slide-in-from-top duration-300">
-                            <div className="flex items-center">
-                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                <p className="ml-3 text-sm text-red-700 font-medium">{getFormattedError(error)}</p>
-                            </div>
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-start space-x-3 animate-slideDown">
+                            <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm font-medium">{successMessage}</p>
                         </div>
                     )}
 
                     {/* Login Form */}
                     {isLogin ? (
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             {/* Email Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">
                                     Email Address
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Mail className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type="email"
+                                        id="login-email"
                                         name="email"
+                                        type="email"
+                                        autoComplete="email"
                                         value={loginData.email}
                                         onChange={(e) => handleInputChange(e, 'login')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.email
-                                                ? 'border-red-300 bg-red-50'
-                                                : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Enter your email"
+                                        className={`input-field pl-10 ${
+                                            validationErrors.email ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="you@example.com"
                                     />
                                 </div>
                                 {validationErrors.email && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.email}
                                     </p>
                                 )}
@@ -314,98 +296,95 @@ const LoginPage: React.FC = () => {
 
                             {/* Password Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-2">
                                     Password
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Lock className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
+                                        id="login-password"
                                         name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="current-password"
                                         value={loginData.password}
                                         onChange={(e) => handleInputChange(e, 'login')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.password
-                                                ? 'border-red-300 bg-red-50'
-                                                : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Enter your password"
+                                        className={`input-field pl-10 pr-10 ${
+                                            validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="••••••••"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        disabled={isLoading}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 disabled:opacity-50"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                     >
                                         {showPassword ? (
-                                            <EyeOff className="h-5 w-5 text-gray-400" />
+                                            <EyeOff className="h-5 w-5" />
                                         ) : (
-                                            <Eye className="h-5 w-5 text-gray-400" />
+                                            <Eye className="h-5 w-5" />
                                         )}
                                     </button>
                                 </div>
                                 {validationErrors.password && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.password}
                                     </p>
                                 )}
                             </div>
 
-                            {/* Submit Button */}
+                            {/* Login Button */}
                             <button
+                                type="button"
                                 onClick={handleLoginSubmit}
-                                disabled={isLoading || !loginData.email || !loginData.password}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                                disabled={isLoading}
+                                className="btn-primary w-full py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        Signing In...
-                                    </>
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Signing in...
+                                    </span>
                                 ) : (
-                                    <>
-                                        <LogIn className="w-5 h-5" />
-                                        Sign In
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </>
+                                    'Sign In'
                                 )}
                             </button>
                         </div>
                     ) : (
                         /* Register Form */
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             {/* Name Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-2">
                                     Full Name
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <User className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type="text"
+                                        id="register-name"
                                         name="name"
+                                        type="text"
+                                        autoComplete="name"
                                         value={registerData.name}
                                         onChange={(e) => handleInputChange(e, 'register')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.name
-                                                ? 'border-red-300 bg-red-50'
-                                                : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Enter your full name"
+                                        className={`input-field pl-10 ${
+                                            validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="John Doe"
                                     />
                                 </div>
                                 {validationErrors.name && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.name}
                                     </p>
                                 )}
@@ -413,31 +392,30 @@ const LoginPage: React.FC = () => {
 
                             {/* Email Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-2">
                                     Email Address
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Mail className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type="email"
+                                        id="register-email"
                                         name="email"
+                                        type="email"
+                                        autoComplete="email"
                                         value={registerData.email}
                                         onChange={(e) => handleInputChange(e, 'register')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.email
-                                                ? 'border-red-300 bg-red-50'
-                                                : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Enter your email"
+                                        className={`input-field pl-10 ${
+                                            validationErrors.email ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="you@example.com"
                                     />
                                 </div>
                                 {validationErrors.email && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.email}
                                     </p>
                                 )}
@@ -445,63 +423,61 @@ const LoginPage: React.FC = () => {
 
                             {/* Password Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-2">
                                     Password
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Lock className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
+                                        id="register-password"
                                         name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="new-password"
                                         value={registerData.password}
                                         onChange={(e) => handleInputChange(e, 'register')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.password
-                                                ? 'border-red-300 bg-red-50'
-                                                : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Create a strong password"
+                                        className={`input-field pl-10 pr-10 ${
+                                            validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="••••••••"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        disabled={isLoading}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 disabled:opacity-50"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                     >
                                         {showPassword ? (
-                                            <EyeOff className="h-5 w-5 text-gray-400" />
+                                            <EyeOff className="h-5 w-5" />
                                         ) : (
-                                            <Eye className="h-5 w-5 text-gray-400" />
+                                            <Eye className="h-5 w-5" />
                                         )}
                                     </button>
                                 </div>
-                                {/* Password Strength Indicator */}
                                 {registerData.password && (
                                     <div className="mt-2">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-gray-500">Password strength:</span>
+                                        <div className="flex items-center justify-between text-xs mb-1">
+                                            <span className="text-gray-600">Password strength:</span>
                                             <span className={`font-medium ${passwordStrength.color}`}>
                                                 {passwordStrength.text}
                                             </span>
                                         </div>
-                                        <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
                                             <div
-                                                className={`h-full transition-all duration-300 ${
+                                                className={`h-1.5 rounded-full transition-all duration-300 ${
                                                     passwordStrength.strength === 1 ? 'bg-red-500 w-1/3' :
                                                         passwordStrength.strength === 2 ? 'bg-yellow-500 w-2/3' :
-                                                            passwordStrength.strength === 3 ? 'bg-green-500 w-full' : 'w-0'
+                                                            passwordStrength.strength === 3 ? 'bg-green-500 w-full' :
+                                                                'w-0'
                                                 }`}
                                             />
                                         </div>
                                     </div>
                                 )}
                                 {validationErrors.password && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.password}
                                     </p>
                                 )}
@@ -509,97 +485,80 @@ const LoginPage: React.FC = () => {
 
                             {/* Confirm Password Field */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
                                     Confirm Password
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Shield className="h-5 w-5 text-gray-400" />
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
-                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        id="register-confirm-password"
                                         name="confirmPassword"
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        autoComplete="new-password"
                                         value={registerData.confirmPassword}
                                         onChange={(e) => handleInputChange(e, 'register')}
                                         onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm ${
-                                            validationErrors.confirmPassword
-                                                ? 'border-red-300 bg-red-50'
-                                                : registerData.confirmPassword && registerData.password === registerData.confirmPassword
-                                                    ? 'border-green-300 bg-green-50'
-                                                    : 'border-gray-300 hover:border-gray-400 focus:bg-white'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        placeholder="Confirm your password"
+                                        className={`input-field pl-10 pr-10 ${
+                                            validationErrors.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''
+                                        }`}
+                                        placeholder="••••••••"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        disabled={isLoading}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 disabled:opacity-50"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                     >
                                         {showConfirmPassword ? (
-                                            <EyeOff className="h-5 w-5 text-gray-400" />
+                                            <EyeOff className="h-5 w-5" />
                                         ) : (
-                                            <Eye className="h-5 w-5 text-gray-400" />
+                                            <Eye className="h-5 w-5" />
                                         )}
                                     </button>
                                 </div>
                                 {validationErrors.confirmPassword && (
-                                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
                                         {validationErrors.confirmPassword}
-                                    </p>
-                                )}
-                                {registerData.confirmPassword && registerData.password === registerData.confirmPassword && (
-                                    <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        Passwords match
                                     </p>
                                 )}
                             </div>
 
-                            {/* Submit Button */}
+                            {/* Register Button */}
                             <button
+                                type="button"
                                 onClick={handleRegisterSubmit}
                                 disabled={isLoading}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                                className="btn-primary w-full py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        Creating Account...
-                                    </>
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Creating account...
+                                    </span>
                                 ) : (
-                                    <>
-                                        <UserPlus className="w-5 h-5" />
-                                        Create Account
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </>
+                                    'Create Account'
                                 )}
                             </button>
                         </div>
                     )}
-
-                    {/* Footer */}
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-600">
-                            {isLogin ? "Don't have an account? " : "Already have an account? "}
-                            <button
-                                onClick={handleToggleMode}
-                                disabled={isLoading}
-                                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors disabled:opacity-50"
-                            >
-                                {isLogin ? 'Sign up' : 'Sign in'}
-                            </button>
-                        </p>
-                    </div>
                 </div>
 
-                {/* Footer Info */}
-                <div className="text-center">
-                    <p className="text-sm text-gray-500">
-                        🔒 Secure authentication with Spring Boot backend
+                {/* Footer */}
+                <div className="text-center text-sm text-gray-600">
+                    <p>
+                        {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                        <button
+                            type="button"
+                            onClick={handleToggleMode}
+                            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                        >
+                            {isLogin ? 'Sign up' : 'Sign in'}
+                        </button>
                     </p>
                 </div>
             </div>

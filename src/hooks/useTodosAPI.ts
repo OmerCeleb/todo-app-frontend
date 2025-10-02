@@ -57,14 +57,18 @@ export function useTodosAPI(): UseTodosAPIReturn {
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    /**
+     * Load statistics from API
+     * FIXED: Now correctly extracts data from response
+     */
     const loadStats = useCallback(async () => {
         try {
-            const response = await todoService.getStats();
-            setStats(response.data);
-            console.log('📊 Stats loaded:', response.data);
+            const stats = await todoService.getStats(); // Returns TodoStats directly
+            setStats(stats);
+            console.log('📊 Stats loaded:', stats);
         } catch (err) {
             console.error('Failed to load stats:', err);
-            // Fallback: local hesaplama
+            // Fallback: Calculate stats locally
             const total = todos.length;
             const completed = todos.filter(t => t.completed).length;
             const active = total - completed;
@@ -75,25 +79,33 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [todos]);
 
+    /**
+     * Load categories from API
+     * FIXED: Now correctly extracts data from response
+     */
     const loadCategories = useCallback(async () => {
         try {
-            const response = await todoService.getCategories();
-            setCategories(response.data);
-            console.log('✅ Categories loaded:', response.data);
+            const categories = await todoService.getCategories(); // Returns string[] directly
+            setCategories(categories);
+            console.log('✅ Categories loaded:', categories);
         } catch (err) {
             console.error('Failed to load categories:', err);
         }
     }, []);
 
+    /**
+     * Load todos from API with filters
+     * FIXED: Now correctly extracts data from response
+     */
     const loadTodos = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await todoService.getTodos({
+            const todos = await todoService.getTodos({ // Returns Todo[] directly
                 status: filters.status !== 'all' ? filters.status : undefined,
                 priority: filters.priority !== 'all' ? filters.priority : undefined,
                 category: filters.category !== 'all' ? filters.category : undefined,
             });
-            setTodos(response.data);
+            setTodos(todos);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load todos');
@@ -103,36 +115,40 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [filters]);
 
-    // İlk yüklemede todos, categories ve stats'i yükle
+    // Initial load: Load todos, categories, and stats
     useEffect(() => {
         loadTodos();
         loadCategories();
         loadStats();
     }, []);
 
-    // Filters değiştiğinde sadece todos'u yükle
+    // Reload todos when filters change
     useEffect(() => {
         loadTodos();
     }, [filters]);
 
-    // Todos değiştiğinde stats'i güncelle
+    // Update stats when todos change
     useEffect(() => {
         if (todos.length > 0) {
             loadStats();
         }
     }, [todos.length, loadStats]);
 
+    /**
+     * Create a new todo
+     * FIXED: Now correctly extracts data from response
+     */
     const createTodo = useCallback(async (data: TodoFormData) => {
         setLoading(true);
         try {
-            const response = await todoService.createTodo({
+            const newTodo = await todoService.createTodo({ // Returns Todo directly
                 title: data.title,
                 description: data.description,
                 priority: data.priority,
                 category: data.category,
                 dueDate: data.dueDate
             });
-            setTodos(prev => [response.data, ...prev]);
+            setTodos(prev => [newTodo, ...prev]); // FIXED: newTodo is Todo, not ApiResponse<Todo>
             await loadCategories();
             await loadStats();
             setError(null);
@@ -144,17 +160,21 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadCategories, loadStats]);
 
+    /**
+     * Update an existing todo
+     * FIXED: Now correctly extracts data from response
+     */
     const updateTodo = useCallback(async (id: string, data: TodoFormData) => {
         setLoading(true);
         try {
-            const response = await todoService.updateTodo(id, {
+            const updatedTodo = await todoService.updateTodo(id, { // Returns Todo directly
                 title: data.title,
                 description: data.description,
                 priority: data.priority,
                 category: data.category,
                 dueDate: data.dueDate
             });
-            setTodos(prev => prev.map(todo => todo.id === id ? response.data : todo));
+            setTodos(prev => prev.map(todo => todo.id === id ? updatedTodo : todo)); // FIXED
             await loadCategories();
             await loadStats();
             setError(null);
@@ -166,6 +186,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadCategories, loadStats]);
 
+    /**
+     * Delete a todo
+     */
     const deleteTodo = useCallback(async (id: string) => {
         setLoading(true);
         try {
@@ -182,14 +205,18 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadCategories, loadStats]);
 
+    /**
+     * Toggle todo completion status
+     * FIXED: Now correctly extracts data from response
+     */
     const toggleTodo = useCallback(async (id: string) => {
         setLoading(true);
         try {
             const todo = todos.find(t => t.id === id);
             if (!todo) return;
 
-            const response = await todoService.toggleTodo(id, !todo.completed);
-            setTodos(prev => prev.map(t => t.id === id ? response.data : t));
+            const updatedTodo = await todoService.toggleTodo(id, !todo.completed); // Returns Todo directly
+            setTodos(prev => prev.map(t => t.id === id ? updatedTodo : t)); // FIXED
             await loadStats();
             setError(null);
         } catch (err) {
@@ -200,6 +227,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [todos, loadStats]);
 
+    /**
+     * Delete multiple todos at once
+     */
     const bulkDelete = useCallback(async (ids: string[]) => {
         setLoading(true);
         try {
@@ -216,6 +246,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadCategories, loadStats]);
 
+    /**
+     * Reorder todos (drag & drop)
+     */
     const reorderTodos = useCallback(async (reorderedTodos: Todo[]) => {
         try {
             setTodos(reorderedTodos);
@@ -232,6 +265,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadTodos]);
 
+    /**
+     * Refresh all data (todos, categories, stats)
+     */
     const refreshTodos = useCallback(async () => {
         setIsRefreshing(true);
         try {
@@ -243,6 +279,10 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [loadTodos, loadCategories, loadStats]);
 
+    /**
+     * Search todos by query string
+     * Client-side filtering for instant results
+     */
     const searchTodos = useCallback((query: string): Todo[] => {
         if (!query.trim()) return todos;
 
@@ -254,6 +294,9 @@ export function useTodosAPI(): UseTodosAPIReturn {
         );
     }, [todos]);
 
+    /**
+     * Clear error state
+     */
     const clearError = useCallback(() => {
         setError(null);
     }, []);

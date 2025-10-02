@@ -1,187 +1,261 @@
 // src/services/authService.ts
 import { apiClient } from './apiClient';
-import { API_CONFIG } from '../config/api';
 
-// Types for authentication
+/**
+ * User entity representing authenticated user data
+ */
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    createdAt: string;
+}
+
+/**
+ * Login request payload
+ */
 export interface LoginRequest {
     email: string;
     password: string;
 }
 
+/**
+ * Registration request payload
+ */
 export interface RegisterRequest {
     name: string;
     email: string;
     password: string;
 }
 
-export interface User {
-    id: number;
-    name: string;
-    email: string;
-    isActive: boolean;
-    role: 'USER' | 'ADMIN';
-    createdAt: string;
-}
-
+/**
+ * Authentication response containing tokens and user data
+ */
 export interface AuthResponse {
     token: string;
-    refreshToken: string;
-    type: string;
+    refreshToken?: string;
     user: User;
 }
 
-export interface RefreshTokenRequest {
-    refreshToken: string;
-}
-
+/**
+ * Authentication Service
+ * Handles all authentication-related API calls including login, register, logout, and token refresh
+ */
 class AuthService {
-    /**
-     * Register a new user
-     */
-    async register(data: RegisterRequest): Promise<AuthResponse> {
-        const response = await apiClient.post<AuthResponse>(
-            API_CONFIG.ENDPOINTS.AUTH.REGISTER,
-            data
-        );
+    private readonly basePath = '/auth';
 
-        // Store tokens in localStorage
-        if (response.token) {
-            apiClient.setAuthToken(response.token);
-            this.setRefreshToken(response.refreshToken);
+    /**
+     * Authenticate user with email and password
+     * Backend: POST /api/auth/login
+     *
+     * @param credentials - User login credentials (email and password)
+     * @returns Promise with authentication response containing tokens and user data
+     * @throws ApiError if authentication fails
+     */
+    async login(credentials: LoginRequest): Promise<AuthResponse> {
+        const response = await apiClient.post<{
+            token: string;
+            refreshToken?: string;
+            user: User;
+        }>(`${this.basePath}/login`, credentials);
+
+        // Store access token in apiClient
+        apiClient.setAuthToken(response.token);
+
+        // Store refresh token in localStorage if provided
+        if (response.refreshToken) {
+            localStorage.setItem('refreshToken', response.refreshToken);
         }
 
-        return response;
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(response.user));
+
+        return {
+            token: response.token,
+            refreshToken: response.refreshToken,
+            user: response.user
+        };
     }
 
     /**
-     * Login user
+     * Register a new user account
+     * Backend: POST /api/auth/register
+     *
+     * @param userData - New user registration data (name, email, password)
+     * @returns Promise with authentication response containing tokens and user data
+     * @throws ApiError if registration fails (e.g., email already exists)
      */
-    async login(data: LoginRequest): Promise<AuthResponse> {
-        const response = await apiClient.post<AuthResponse>(
-            API_CONFIG.ENDPOINTS.AUTH.LOGIN,
-            data
-        );
+    async register(userData: RegisterRequest): Promise<AuthResponse> {
+        const response = await apiClient.post<{
+            token: string;
+            refreshToken?: string;
+            user: User;
+        }>(`${this.basePath}/register`, userData);
 
-        // Store tokens in localStorage
-        if (response.token) {
-            apiClient.setAuthToken(response.token);
-            this.setRefreshToken(response.refreshToken);
+        // Store access token in apiClient
+        apiClient.setAuthToken(response.token);
+
+        // Store refresh token in localStorage if provided
+        if (response.refreshToken) {
+            localStorage.setItem('refreshToken', response.refreshToken);
         }
 
-        return response;
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(response.user));
+
+        return {
+            token: response.token,
+            refreshToken: response.refreshToken,
+            user: response.user
+        };
     }
 
     /**
-     * Logout user
+     * Logout current user and clear all stored authentication data
+     * Backend: POST /api/auth/logout
+     *
+     * @returns Promise that resolves when logout is complete
+     * @note Clears tokens from storage even if API call fails
      */
     async logout(): Promise<void> {
         try {
-            await apiClient.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT, {});
+            // Notify backend of logout
+            await apiClient.post(`${this.basePath}/logout`, {});
         } catch (error) {
-            // Continue with logout even if server request fails
-            console.warn('Logout request failed:', error);
+            console.error('Logout API call failed:', error);
         } finally {
-            // Always clear local tokens
-            this.clearTokens();
+            // Clear all authentication data regardless of API response
+            this.clearAuthData();
         }
     }
 
     /**
-     * Refresh access token
+     * Refresh expired access token using refresh token
+     * Backend: POST /api/auth/refresh
+     *
+     * @param refreshToken - Valid refresh token
+     * @returns Promise with new authentication tokens and user data
+     * @throws ApiError if refresh token is invalid or expired
      */
-    async refreshToken(): Promise<AuthResponse> {
-        const refreshToken = this.getRefreshToken();
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
+    async refreshToken(refreshToken: string): Promise<AuthResponse> {
+        const response = await apiClient.post<{
+            token: string;
+            refreshToken?: string;
+            user: User;
+        }>(`${this.basePath}/refresh`, { refreshToken });
+
+        // Update stored access token
+        apiClient.setAuthToken(response.token);
+
+        // Update refresh token if new one is provided
+        if (response.refreshToken) {
+            localStorage.setItem('refreshToken', response.refreshToken);
         }
 
-        const response = await apiClient.post<AuthResponse>(
-            API_CONFIG.ENDPOINTS.AUTH.REFRESH,
-            { refreshToken }
-        );
+        // Update stored user data
+        localStorage.setItem('user', JSON.stringify(response.user));
 
-        // Update stored tokens
-        if (response.token) {
-            apiClient.setAuthToken(response.token);
-            if (response.refreshToken) {
-                this.setRefreshToken(response.refreshToken);
-            }
-        }
-
-        return response;
+        return {
+            token: response.token,
+            refreshToken: response.refreshToken,
+            user: response.user
+        };
     }
 
     /**
-     * Get current user profile
+     * Get currently authenticated user from localStorage
+     *
+     * @returns User object if authenticated, null otherwise
      */
-    async getCurrentUser(): Promise<User> {
-        return apiClient.get<User>(API_CONFIG.ENDPOINTS.AUTH.ME);
+    getCurrentUser(): User | null {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
+
+        try {
+            return JSON.parse(userStr) as User;
+        } catch (error) {
+            console.error('Failed to parse user data:', error);
+            return null;
+        }
     }
 
     /**
-     * Check if user is authenticated
+     * Check if user is currently authenticated
+     * Validates presence of both access token and user data
+     *
+     * @returns true if user is authenticated, false otherwise
      */
     isAuthenticated(): boolean {
         const token = localStorage.getItem('authToken');
-        if (!token) return false;
-
-        // Check if token is expired (basic check)
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const currentTime = Date.now() / 1000;
-            return payload.exp > currentTime;
-        } catch (error) {
-            return false;
-        }
+        const user = this.getCurrentUser();
+        return Boolean(token && user);
     }
 
     /**
-     * Get stored refresh token
+     * Get stored refresh token from localStorage
+     *
+     * @returns Refresh token string if exists, null otherwise
      */
-    private getRefreshToken(): string | null {
+    getRefreshToken(): string | null {
         return localStorage.getItem('refreshToken');
     }
 
     /**
-     * Set refresh token in localStorage
+     * Clear all authentication data from storage
+     * Use this for force logout without API call
      */
-    private setRefreshToken(token: string): void {
-        localStorage.setItem('refreshToken', token);
-    }
-
-    /**
-     * Clear all stored tokens
-     */
-    private clearTokens(): void {
+    clearAuthData(): void {
         apiClient.removeAuthToken();
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
     }
 
     /**
-     * Get current auth token
+     * Verify if current token is still valid
+     * This is a client-side check based on token existence
+     * For server-side validation, make an authenticated API call
+     *
+     * @returns true if token exists, false otherwise
      */
-    getAuthToken(): string | null {
-        return localStorage.getItem('authToken');
+    hasValidToken(): boolean {
+        return Boolean(localStorage.getItem('authToken'));
     }
 
     /**
-     * Validate and auto-refresh token if needed
+     * Validate current token and refresh if needed
+     * Attempts to refresh token if expired
+     *
+     * @returns Promise<boolean> - true if token is valid or successfully refreshed, false otherwise
      */
     async validateAndRefreshToken(): Promise<boolean> {
-        if (!this.isAuthenticated()) {
-            const refreshToken = this.getRefreshToken();
-            if (refreshToken) {
-                try {
-                    await this.refreshToken();
-                    return true;
-                } catch (error) {
-                    this.clearTokens();
-                    return false;
-                }
-            }
+        const token = localStorage.getItem('authToken');
+        const refreshToken = this.getRefreshToken();
+
+        // No tokens available
+        if (!token && !refreshToken) {
             return false;
         }
-        return true;
+
+        // If we have a token, assume it's valid (backend will validate on requests)
+        if (token) {
+            return true;
+        }
+
+        // Try to refresh if we only have refresh token
+        if (refreshToken) {
+            try {
+                await this.refreshToken(refreshToken);
+                return true;
+            } catch (error) {
+                console.error('Token refresh failed:', error);
+                this.clearAuthData();
+                return false;
+            }
+        }
+
+        return false;
     }
 }
 

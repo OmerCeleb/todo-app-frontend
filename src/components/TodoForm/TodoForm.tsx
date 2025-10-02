@@ -1,3 +1,4 @@
+// src/components/TodoForm/TodoForm.tsx
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -9,7 +10,7 @@ export interface Todo {
     title: string;
     description?: string;
     completed: boolean;
-    priority: 'LOW' | 'MEDIUM' | 'HIGH';  // Uppercase
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
     category?: string;
     createdAt: string;
     updatedAt: string;
@@ -22,6 +23,7 @@ export interface TodoFormData {
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     category: string;
     dueDate: string;
+    completed?: boolean; // EKLENDI
 }
 
 interface TodoFormProps {
@@ -82,6 +84,7 @@ export function TodoForm({ isOpen, onClose, onSubmit, todo, mode = 'add' }: Todo
         priority: 'MEDIUM',
         category: '',
         dueDate: '',
+        completed: false, // EKLENDI
     });
 
     // Reset form when modal opens/closes or todo changes
@@ -94,141 +97,124 @@ export function TodoForm({ isOpen, onClose, onSubmit, todo, mode = 'add' }: Todo
                     priority: todo.priority,
                     category: todo.category || '',
                     dueDate: todo.dueDate ? todo.dueDate.split('T')[0] : '',
+                    completed: todo.completed, // EKLENDI
                 });
             } else {
+                // Reset form for add mode
                 setFormData({
                     title: '',
                     description: '',
                     priority: 'MEDIUM',
                     category: '',
                     dueDate: '',
+                    completed: false, // EKLENDI
                 });
             }
         }
-    }, [isOpen, todo, mode]);
+    }, [isOpen, mode, todo]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.title.trim()) return;
 
-        onSubmit(formData, todo?.id);
+        onSubmit(formData, mode === 'edit' && todo ? todo.id : undefined);
         onClose();
     };
 
-    const handleChange = (field: keyof TodoFormData, value: string) => {
+    const handleInputChange = (field: keyof TodoFormData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'high': return 'text-red-600 bg-red-50 border-red-200';
-            case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-            case 'low': return 'text-green-600 bg-green-50 border-green-200';
-            default: return 'text-gray-600 bg-gray-50 border-gray-200';
-        }
     };
 
     return (
         <SimpleModal
             isOpen={isOpen}
             onClose={onClose}
-            title={mode === 'edit' ? 'Edit Todo' : 'Add Todo'}
+            title={mode === 'edit' ? 'Edit Todo' : 'Add New Todo'}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                    label="Title"
-                    value={formData.title}
-                    onChange={(e) => handleChange('title', e.target.value)}
-                    placeholder="Enter todo title..."
-                    required
-                />
+                {/* Title Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Title *
+                    </label>
+                    <Input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => handleInputChange('title', e.target.value)}
+                        placeholder="Enter todo title"
+                        required
+                        autoFocus
+                    />
+                </div>
 
+                {/* Description Input */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Description
                     </label>
                     <textarea
                         value={formData.description}
-                        onChange={(e) => handleChange('description', e.target.value)}
-                        placeholder="Enter description (optional)..."
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        placeholder="Enter description (optional)"
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Priority
-                        </label>
-                        <select
-                            value={formData.priority}
-                            onChange={(e) => handleChange('priority', e.target.value as 'low' | 'medium' | 'high')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {priorityOptions.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Category
-                        </label>
-                        <select
-                            value={formData.category}
-                            onChange={(e) => handleChange('category', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Select category...</option>
-                            {categoryOptions.map(category => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                {/* Priority Select */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Priority
+                    </label>
+                    <select
+                        value={formData.priority}
+                        onChange={(e) => handleInputChange('priority', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        {priorityOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
-                <Input
-                    label="Due Date"
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) => handleChange('dueDate', e.target.value)}
-                    helperText="Optional due date"
-                />
+                {/* Category Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                    </label>
+                    <select
+                        value={formData.category}
+                        onChange={(e) => handleInputChange('category', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        <option value="">Select a category</option>
+                        {categoryOptions.map(category => (
+                            <option key={category} value={category}>
+                                {category}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-                {/* Preview */}
-                {formData.title && (
-                    <div className="bg-gray-50 rounded-lg p-3 border">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
-                        <div className="bg-white border rounded p-2">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                                <h3 className="font-medium text-gray-900">{formData.title}</h3>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                                    getPriorityColor(formData.priority)
-                                }`}>
-                  {formData.priority}
-                </span>
-                            </div>
-                            {formData.description && (
-                                <p className="text-sm text-gray-600 mb-2">{formData.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
-                                {formData.category && <span>📁 {formData.category}</span>}
-                                {formData.dueDate && <span>📅 Due: {new Date(formData.dueDate).toLocaleDateString()}</span>}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Due Date Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Due Date
+                    </label>
+                    <Input
+                        type="date"
+                        value={formData.dueDate}
+                        onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    />
+                </div>
 
-                <div className="flex gap-3 pt-4 border-t">
+                {/* Form Actions */}
+                <div className="flex gap-2 pt-4">
                     <Button
                         type="button"
-                        variant="secondary"
+                        variant="outline"
                         onClick={onClose}
                         className="flex-1"
                     >
@@ -240,7 +226,7 @@ export function TodoForm({ isOpen, onClose, onSubmit, todo, mode = 'add' }: Todo
                         disabled={!formData.title.trim()}
                         className="flex-1"
                     >
-                        {mode === 'edit' ? 'Update Todo' : 'Create Todo'}
+                        {mode === 'edit' ? 'Update' : 'Add'} Todo
                     </Button>
                 </div>
             </form>

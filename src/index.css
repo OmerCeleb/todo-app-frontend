@@ -204,6 +204,45 @@
         min-height: 44px;
         min-width: 44px;
     }
+
+    /* Dark mode ghost button override */
+    .dark .btn-ghost,
+    .dark button[class*="ghost"] {
+        color: rgb(196 181 253) !important; /* purple-300 */
+    }
+
+    .dark .btn-ghost:hover,
+    .dark button[class*="ghost"]:hover {
+        color: rgb(167 139 250) !important; /* purple-400 */
+        background-color: rgb(55 65 81) !important; /* gray-700 */
+    }
+
+    /* Dark mode outline button override */
+    .dark .btn-outline,
+    .dark button[class*="outline"] {
+        color: rgb(196 181 253) !important; /* purple-300 */
+        border-color: rgb(75 85 99) !important; /* gray-600 */
+    }
+
+    .dark .btn-outline:hover,
+    .dark button[class*="outline"]:hover {
+        color: rgb(167 139 250) !important; /* purple-400 */
+        background-color: rgb(55 65 81) !important; /* gray-700 */
+    }
+
+    /* Specific selectors for buttons with text */
+    .dark button span {
+        color: inherit;
+    }
+
+    /* Force purple text for specific button variants in dark mode */
+    .dark button:not([class*="primary"]):not([class*="danger"]):not([class*="secondary"]) {
+        color: rgb(196 181 253) !important; /* purple-300 */
+    }
+
+    .dark button:not([class*="primary"]):not([class*="danger"]):not([class*="secondary"]):hover {
+        color: rgb(167 139 250) !important; /* purple-400 */
+    }
 }
 
 @layer utilities {
@@ -254,6 +293,10 @@
 
     .animate-wiggle {
         animation: wiggle 1s ease-in-out infinite;
+    }
+
+    .animate-slideDown {
+        animation: slideDown 0.3s ease-out;
     }
 
     /* Hover effects */
@@ -331,6 +374,14 @@
     .no-tap-highlight {
         -webkit-tap-highlight-color: transparent;
     }
+
+    .dark-purple-text {
+        color: rgb(196 181 253) !important;
+    }
+
+    .dark-purple-text:hover {
+        color: rgb(167 139 250) !important;
+    }
 }
 
 /* Keyframe animations */
@@ -353,6 +404,17 @@
 }
 
 @keyframes slideIn {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
     from {
         transform: translateY(-10px);
         opacity: 0;
@@ -542,58 +604,5 @@
 
     .no-print {
         display: none !important;
-    }
-}
-
-
-@layer components {
-    /* Dark mode ghost button override */
-    .dark .btn-ghost,
-    .dark button[class*="ghost"] {
-        color: rgb(196 181 253) !important; /* purple-300 */
-    }
-
-    .dark .btn-ghost:hover,
-    .dark button[class*="ghost"]:hover {
-        color: rgb(167 139 250) !important; /* purple-400 */
-        background-color: rgb(55 65 81) !important; /* gray-700 */
-    }
-
-    /* Dark mode outline button override */
-    .dark .btn-outline,
-    .dark button[class*="outline"] {
-        color: rgb(196 181 253) !important; /* purple-300 */
-        border-color: rgb(75 85 99) !important; /* gray-600 */
-    }
-
-    .dark .btn-outline:hover,
-    .dark button[class*="outline"]:hover {
-        color: rgb(167 139 250) !important; /* purple-400 */
-        background-color: rgb(55 65 81) !important; /* gray-700 */
-    }
-
-    /* Specific selectors for buttons with text */
-    .dark button span {
-        color: inherit;
-    }
-
-    /* Force purple text for specific button variants in dark mode */
-    .dark button:not([class*="primary"]):not([class*="danger"]):not([class*="secondary"]) {
-        color: rgb(196 181 253) !important; /* purple-300 */
-    }
-
-    .dark button:not([class*="primary"]):not([class*="danger"]):not([class*="secondary"]):hover {
-        color: rgb(167 139 250) !important; /* purple-400 */
-    }
-}
-
-/* Alternative approach - more specific selectors */
-@layer utilities {
-    .dark-purple-text {
-        color: rgb(196 181 253) !important;
-    }
-
-    .dark-purple-text:hover {
-        color: rgb(167 139 250) !important;
     }
 }
