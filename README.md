@@ -1,398 +1,327 @@
-# 📝 Todo App - Full-Stack Task Management System
+# 📝 Modern Todo Application - Frontend
 
-<div align="center">
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.0-brightgreen?style=for-the-badge&logo=springboot)
-![React](https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge&logo=postgresql)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+> A modern, responsive todo management application built with React, TypeScript, and Tailwind CSS.
 
-A modern, full-stack todo application with a Spring Boot backend and React frontend, featuring JWT authentication, drag-and-drop functionality, and real-time updates.
-
-[Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [API Documentation](#-api-documentation) • [Contributing](#-contributing)
-
-</div>
+[🌐 Live Demo](#) | [📚 Backend Repository](https://github.com/OmerCeleb/todo-backend) | [🐛 Report Bug](https://github.com/OmerCeleb/todo-app-frontend/issues)
 
 ---
 
-## 🎯 Features
+## ✨ Features
 
-### Backend
-- ✅ **RESTful API** with Spring Boot 3.3
-- 🔐 **JWT Authentication** with Spring Security
-- 🗄️ **PostgreSQL Database** with JPA/Hibernate
-- 📊 **Statistics & Analytics** endpoint
-- 🔍 **Advanced Filtering** (status, priority, category, date)
-- ✨ **Automatic Timestamps** for todos
-- 🛡️ **Input Validation** with Bean Validation
-- 🌐 **CORS Configuration** for frontend integration
+### 🎨 User Interface
+- **Modern Design**: Clean, intuitive interface with smooth animations
+- **Dark Mode**: Full dark mode support with system preference detection
+- **Responsive**: Works perfectly on desktop, tablet, and mobile devices
+- **Accessible**: WCAG AA compliant with keyboard navigation support
 
-### Frontend
-- ⚛️ **React 18** with TypeScript
-- 🎨 **Tailwind CSS** for modern UI
-- 🌓 **Dark Mode** support
-- 🎭 **Drag & Drop** todo reordering
-- 📱 **Fully Responsive** design
-- 🔄 **Real-time Updates** with state management
-- 🎨 **Category Colors** & priority indicators
-- 📊 **Statistics Dashboard**
-- 🎯 **Bulk Actions** for todos
-- 🔍 **Advanced Filters** & search
+### ✅ Todo Management
+- **CRUD Operations**: Create, read, update, and delete todos
+- **Priority Levels**: LOW, MEDIUM, HIGH priority management
+- **Categories**: Organize todos by custom categories
+- **Due Dates**: Track deadlines with overdue detection
+- **Bulk Actions**: Select and manage multiple todos at once
+- **Drag & Drop**: Reorder todos (coming soon)
 
----
+### 🔐 Authentication
+- **JWT Authentication**: Secure login and registration
+- **Session Management**: Automatic token refresh
+- **Protected Routes**: Route guards for authenticated pages
 
-## 🛠️ Tech Stack
+### 📊 Analytics & Statistics
+- **Dashboard**: Real-time statistics and insights
+- **Progress Tracking**: Visual completion progress
+- **Category Analytics**: Performance by category
+- **Overdue Tracking**: Monitor overdue tasks
 
-### Backend
-- **Language:** Java 21
-- **Framework:** Spring Boot 3.3.0
-- **Security:** Spring Security + JWT
-- **Database:** PostgreSQL 15
-- **ORM:** Hibernate / Spring Data JPA
-- **Build Tool:** Maven
-- **Validation:** Bean Validation (JSR 380)
-
-### Frontend
-- **Framework:** React 18
-- **Language:** TypeScript 5
-- **Styling:** Tailwind CSS
-- **State Management:** Zustand
-- **HTTP Client:** Axios
-- **Routing:** React Router
-- **Icons:** Lucide React
-- **Drag & Drop:** @dnd-kit
+### 🚀 Performance
+- **Code Splitting**: Lazy loading for optimal performance
+- **Memoization**: React.memo for expensive components
+- **Virtual Scrolling**: Efficient rendering of large lists
+- **Debounced Search**: Optimized search functionality
+- **Offline Support**: PWA capabilities (coming soon)
 
 ---
 
-## 📋 Prerequisites
+## 🏗️ Tech Stack
 
-Before you begin, ensure you have the following installed:
+### Core
+- **React 18.3** - Modern React with concurrent features
+- **TypeScript 5.5** - Type-safe development
+- **Vite 5.4** - Lightning-fast build tool
+- **Tailwind CSS 3.4** - Utility-first CSS framework
 
-- **Java 21** or higher ([Download](https://adoptium.net/))
-- **Maven 3.6+** ([Download](https://maven.apache.org/download.cgi))
-- **Node.js 18+** ([Download](https://nodejs.org/))
-- **Docker** (for PostgreSQL) ([Download](https://www.docker.com/))
-- **Git** ([Download](https://git-scm.com/))
+### State Management & Routing
+- **React Context API** - Lightweight state management
+- **Custom Hooks** - Reusable logic encapsulation
+
+### UI Components
+- **Lucide React** - Beautiful icon library
+- **Custom Components** - Fully accessible component library
+- **Headless UI** (planned) - Unstyled, accessible components
+
+### Development Tools
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Jest** - Unit testing
+- **React Testing Library** - Component testing
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### 1️⃣ Clone the Repository
+### Prerequisites
+- **Node.js 18+**
+- **npm 9+** or **yarn 1.22+**
+- **Backend API** running (see [backend repo](https://github.com/OmerCeleb/todo-backend))
 
-```bash
-git clone https://github.com/yourusername/todo-app.git
-cd todo-app
-```
-
-### 2️⃣ Backend Setup
-
-#### Start PostgreSQL with Docker
+### Installation
 
 ```bash
-docker run --name todo-postgres \
-  -e POSTGRES_USER=your_username \
-  -e POSTGRES_PASSWORD=your_secure_password \
-  -e POSTGRES_DB=todo_db \
-  -p 5432:5432 \
-  -d postgres:15
-```
-
-#### Configure Environment Variables
-
-Create a `.env` file in the backend root directory:
-
-```bash
-cp .env.example .env
-```
-
-Update `.env` with your configuration:
-
-```env
-# Database Configuration
-DB_URL=jdbc:postgresql://localhost:5432/todo_db
-DB_USERNAME=your_username
-DB_PASSWORD=your_secure_password
-
-# JWT Configuration (Generate a secure random string)
-JWT_SECRET=your-very-long-and-secure-jwt-secret-key-minimum-256-bits
-JWT_EXPIRATION=86400000
-
-# Admin User (Created on first startup)
-ADMIN_EMAIL=admin@todoapp.com
-ADMIN_PASSWORD=your_admin_password
-ADMIN_NAME=Admin User
-
-# Server Configuration
-SERVER_PORT=8080
-
-# CORS Allowed Origins
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-```
-
-#### Build and Run Backend
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Build the project
-mvn clean install
-
-# Run the application
-mvn spring-boot:run
-```
-
-The backend will start on `http://localhost:8080`
-
-### 3️⃣ Frontend Setup
-
-```bash
-# Navigate to frontend directory
-cd frontend
+# Clone the repository
+git clone https://github.com/OmerCeleb/todo-app-frontend.git
+cd todo-app-frontend
 
 # Install dependencies
 npm install
 
+# Copy environment variables
+cp .env.example .env.local
+
+# Update .env.local with your API URL
+# VITE_API_BASE_URL=http://localhost:8080
+
 # Start development server
-npm start
+npm run dev
 ```
 
-The frontend will start on `http://localhost:3000`
+The app will be available at `http://localhost:5173`
 
 ---
 
-## 📖 API Documentation
+## 📁 Project Structure
 
-### Base URL
 ```
-http://localhost:8080/api
-```
-
-### Authentication Endpoints
-
-#### Register New User
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "john@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-**Response:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com"
-  }
-}
-```
-
-### Todo Endpoints
-
-All todo endpoints require authentication. Include JWT token in headers:
-```
-Authorization: Bearer <your_jwt_token>
-```
-
-#### Get All Todos
-```http
-GET /api/todos
-```
-
-**Query Parameters:**
-- `completed` (boolean): Filter by completion status
-- `priority` (string): LOW, MEDIUM, HIGH
-- `category` (string): Filter by category
-- `search` (string): Search in title and description
-
-#### Create Todo
-```http
-POST /api/todos
-Content-Type: application/json
-
-{
-  "title": "Complete project documentation",
-  "description": "Write comprehensive README",
-  "priority": "HIGH",
-  "category": "Documentation",
-  "dueDate": "2025-01-25T23:59:59"
-}
-```
-
-#### Update Todo
-```http
-PUT /api/todos/{id}
-Content-Type: application/json
-
-{
-  "title": "Updated title",
-  "priority": "MEDIUM"
-}
-```
-
-#### Toggle Completion
-```http
-PATCH /api/todos/{id}
-Content-Type: application/json
-
-{
-  "completed": true
-}
-```
-
-#### Delete Todo
-```http
-DELETE /api/todos/{id}
-```
-
-#### Get Statistics
-```http
-GET /api/todos/stats
-```
-
-**Response:**
-```json
-{
-  "total": 25,
-  "completed": 10,
-  "active": 15,
-  "overdue": 3,
-  "completionPercentage": 40.0
-}
-```
-
-#### Additional Endpoints
-- `GET /api/todos/categories` - Get all categories
-- `GET /api/todos/overdue` - Get overdue todos
-- `GET /api/todos/due-today` - Get todos due today
-- `POST /api/todos/bulk-delete` - Bulk delete todos
-- `POST /api/todos/reorder` - Reorder todos
-
----
-
-## 🏗️ Project Structure
-
-### Backend Structure
-```
-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/todoapp/
-│   │   │   ├── controller/          # REST endpoints
-│   │   │   ├── service/             # Business logic
-│   │   │   ├── repository/          # Data access
-│   │   │   ├── entity/              # JPA entities
-│   │   │   ├── dto/                 # Data Transfer Objects
-│   │   │   ├── security/            # JWT & Security config
-│   │   │   └── TodoAppApplication.java
-│   │   └── resources/
-│   │       └── application.yml      # Configuration
-│   └── test/                        # Unit & Integration tests
-├── .env                             # Environment variables (gitignored)
-├── .env.example                     # Example environment variables
-├── .gitignore
-└── pom.xml                          # Maven dependencies
-```
-
-### Frontend Structure
-```
-frontend/
-├── src/
-│   ├── components/                  # React components
-│   │   ├── TodoForm/
-│   │   ├── TodoItem/
-│   │   ├── TodoFilters/
-│   │   ├── DragDropContext/
-│   │   └── ui/                      # Reusable UI components
-│   ├── contexts/                    # React contexts
-│   ├── hooks/                       # Custom hooks
-│   ├── services/                    # API services
-│   ├── store/                       # State management
-│   ├── utils/                       # Utility functions
-│   └── App.tsx                      # Main app component
-├── public/
-├── .env                             # Environment variables (gitignored)
-├── .env.example
-└── package.json
+src/
+├── components/          # React components
+│   ├── Auth/           # Authentication components
+│   ├── Dashboard/      # Dashboard components
+│   ├── TodoForm/       # Todo form components
+│   ├── TodoListView/   # Todo list components
+│   ├── ui/             # Reusable UI components
+│   └── ...
+├── contexts/           # React contexts
+│   ├── AuthContext.tsx
+│   └── ThemeContext.tsx
+├── hooks/              # Custom React hooks
+│   ├── useTodos.ts
+│   ├── useTodosAPI.ts
+│   ├── useTheme.ts
+│   ├── useDebounce.ts
+│   ├── usePerformance.ts
+│   └── ...
+├── services/           # API services
+│   ├── api.ts
+│   ├── todoService.ts
+│   └── authService.ts
+├── utils/              # Utility functions
+│   ├── dateUtils.ts
+│   ├── todoTemplates.ts
+│   ├── categoryColors.ts
+│   ├── accessibility.ts
+│   └── ...
+├── types/              # TypeScript type definitions
+├── config/             # Configuration files
+│   └── env.ts
+├── App.tsx             # Main app component
+├── main.tsx            # App entry point
+└── index.css           # Global styles
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Backend Testing
 ```bash
 # Run all tests
-mvn test
-
-# Run with coverage
-mvn test jacoco:report
-
-# View coverage report
-open target/site/jacoco/index.html
-```
-
-### Frontend Testing
-```bash
-# Run tests
 npm test
 
-# Run with coverage
+# Run tests in watch mode
+npm test -- --watch
+
+# Generate coverage report
 npm test -- --coverage
 
-# E2E tests (if configured)
-npm run test:e2e
+# Run specific test file
+npm test TodoForm.test.tsx
+```
+
+### Testing Coverage
+- **Unit Tests**: Individual functions and utilities
+- **Component Tests**: React component rendering and interactions
+- **Integration Tests**: Component interactions and data flow
+- **Accessibility Tests**: ARIA labels and keyboard navigation
+
+---
+
+## 🎨 Customization
+
+### Theme Configuration
+
+Edit `src/config/theme.ts`:
+
+```typescript
+export const theme = {
+  colors: {
+    primary: '#3B82F6',
+    secondary: '#8B5CF6',
+    // ... customize colors
+  }
+};
+```
+
+### Environment Variables
+
+Create `.env.local`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080
+VITE_API_TIMEOUT=10000
+VITE_ENABLE_ANALYTICS=false
 ```
 
 ---
 
-## 🔒 Security
+## 📦 Build & Deployment
 
-- ✅ **JWT Authentication** with secure token generation
-- ✅ **Password Hashing** with BCrypt
-- ✅ **CORS** properly configured
-- ✅ **SQL Injection** protection via JPA
-- ✅ **Input Validation** on all endpoints
-- ✅ **Environment Variables** for sensitive data
-- ⚠️ **HTTPS** recommended for production
+```bash
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Analyze bundle size
+npm run build -- --analyze
+```
+
+### Deployment Options
+
+- **Vercel**: `vercel deploy`
+- **Netlify**: `netlify deploy`
+- **GitHub Pages**: `npm run deploy`
+- **Docker**: `docker build -t todo-app .`
 
 ---
 
-## 🚢 Deployment
+## 🔧 Configuration
 
-### Backend Deployment (Railway/Render/Heroku)
+### Vite Configuration
 
-1. Create a PostgreSQL database
-2. Set environment variables on the platform
-3. Deploy from GitHub repository
+`vite.config.ts`:
 
-### Frontend Deployment (Vercel/Netlify)
+```typescript
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+        },
+      },
+    },
+  },
+});
+```
 
-1. Connect your GitHub repository
-2. Set build command: `npm run build`
-3. Set publish directory: `build` or `dist`
-4. Add environment variable: `REACT_APP_API_URL`
+### TypeScript Configuration
+
+`tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "strict": true
+  }
+}
+```
+
+---
+
+## 🌟 Key Features Deep Dive
+
+### Performance Optimizations
+
+1. **React.memo**: Prevents unnecessary re-renders
+2. **useMemo**: Memoizes expensive computations
+3. **useCallback**: Memoizes callback functions
+4. **Code Splitting**: Dynamic imports for routes
+5. **Debouncing**: Optimized search and input handling
+
+### Accessibility Features
+
+1. **Keyboard Navigation**: Full keyboard support
+2. **ARIA Labels**: Proper semantic HTML and ARIA attributes
+3. **Focus Management**: Focus traps in modals
+4. **Screen Reader Support**: Announcements for dynamic content
+5. **Color Contrast**: WCAG AA compliant colors
+
+### Error Handling
+
+1. **Error Boundaries**: Catch React errors gracefully
+2. **API Error Handling**: User-friendly error messages
+3. **Network Error Detection**: Offline mode support
+4. **Form Validation**: Client-side validation with clear feedback
+
+---
+
+## 🛠️ Development
+
+### Code Style
+
+We use ESLint and Prettier for consistent code style:
+
+```bash
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+
+# Fix auto-fixable issues
+npm run lint:fix
+```
+
+### Component Development
+
+```typescript
+// Example: Creating a new component
+import { memo } from 'react';
+
+export const MyComponent = memo(({ prop }: Props) => {
+  return <div>{prop}</div>;
+});
+```
+
+---
+
+## 📈 Performance Metrics
+
+- **First Contentful Paint**: < 1.5s
+- **Time to Interactive**: < 3.5s
+- **Lighthouse Score**: 95+
+- **Bundle Size**: < 200KB (gzipped)
 
 ---
 
@@ -401,16 +330,17 @@ npm run test:e2e
 Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Coding Standards
-- Follow Java and TypeScript best practices
-- Write meaningful commit messages
-- Add tests for new features
+### Development Guidelines
+
+- Write tests for new features
+- Follow the existing code style
 - Update documentation as needed
+- Keep components small and focused
 
 ---
 
@@ -420,43 +350,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 👤 Author
+## 👨‍💻 Author
 
-**Your Name**
+**Ömer Çelebi**
 
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your Name](https://linkedin.com/in/yourprofile)
-- Email: your.email@example.com
+- LinkedIn: [@omercelebii](https://www.linkedin.com/in/omercelebii/)
+- Email: omer534@outlook.com
+- GitHub: [@OmerCeleb](https://github.com/OmerCeleb)
 
 ---
 
 ## 🙏 Acknowledgments
 
-- [Spring Boot](https://spring.io/projects/spring-boot) - Backend framework
-- [React](https://react.dev/) - Frontend library
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [PostgreSQL](https://www.postgresql.org/) - Database
+- React Team for the amazing framework
+- Tailwind Labs for Tailwind CSS
+- Lucide for beautiful icons
+- Open source community for inspiration
 
 ---
 
-## 📊 Project Status
+## 📚 Resources
 
-🚧 **Active Development** - This project is actively maintained and updated regularly.
-
-### Roadmap
-- [ ] Email notifications for due dates
-- [ ] File attachments for todos
-- [ ] Todo sharing & collaboration
-- [ ] Mobile app (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Integration with calendar apps
+- [React Documentation](https://react.dev/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Tailwind CSS Docs](https://tailwindcss.com/docs)
+- [Vite Guide](https://vitejs.dev/guide/)
 
 ---
 
 <div align="center">
 
-**⭐ Star this repo if you find it helpful!**
+**⭐ If you found this project helpful, please give it a star!**
 
-Made with ❤️ using Spring Boot & React
+[View Demo](#) · [Report Bug](https://github.com/OmerCeleb/todo-app-frontend/issues) · [Request Feature](https://github.com/OmerCeleb/todo-app-frontend/issues)
+
+Made with ❤️ and ☕ by Ömer Çelebi
 
 </div>

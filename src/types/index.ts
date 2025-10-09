@@ -1,87 +1,72 @@
+// src/types/index.ts
+
 export interface Todo {
     id: string;
     title: string;
     description?: string;
     completed: boolean;
-    priority: Priority;
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
     category?: string;
     createdAt: string;
     updatedAt: string;
     dueDate?: string;
-    favorite?: boolean;
-    archived?: boolean;
 }
 
-export interface CreateTodoRequest {
-    title: string;
-    description?: string;
-    priority?: Priority;
-    category?: string;
-    dueDate?: string;
-    favorite?: boolean;
+export interface TodoFilter {
+    status: 'all' | 'active' | 'completed';
+    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
+    category: string;
+    dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
+    searchQuery?: string;
 }
 
-export interface UpdateTodoRequest {
-    title?: string;
-    description?: string;
-    completed?: boolean;
-    priority?: Priority;
-    category?: string;
-    dueDate?: string;
-    favorite?: boolean;
-    archived?: boolean;
+export interface TodoSort {
+    sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';
+    sortOrder: 'asc' | 'desc';
 }
-
-export type Priority = 'low' | 'medium' | 'high';
-
-export type FilterType = 'all' | 'active' | 'completed';
-
-export type SortType = 'created' | 'updated' | 'priority' | 'title' | 'dueDate';
 
 export interface TodoStats {
     total: number;
     completed: number;
     active: number;
-    byPriority: {
+    overdue: number;
+    byPriority?: {
         low: number;
         medium: number;
         high: number;
     };
+    byCategory?: Record<string, number>;
 }
 
-export interface TodoFilter {
-    type: FilterType;
-    category?: string;
-    priority?: Priority;
-    search?: string;
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: 'USER' | 'ADMIN';
+    createdAt: string;
 }
 
-export interface TodoSort {
-    field: SortType;
-    direction: 'asc' | 'desc';
+export interface AuthState {
+    user: User | null;
+    token: string | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
 }
 
 export interface ApiResponse<T> {
     data: T;
-    message: string;
-    success: boolean;
+    message?: string;
+    success?: boolean;
 }
 
-export interface ApiError {
-    message: string;
-    code: string;
-    details?: Record<string, any>;
-}
-
-export interface UseTodosReturn {
-    todos: Todo[];
-    loading: boolean;
-    error: string | null;
-    stats: TodoStats;
-    addTodo: (todo: CreateTodoRequest) => Promise<void>;
-    updateTodo: (id: string, updates: UpdateTodoRequest) => Promise<void>;
-    deleteTodo: (id: string) => Promise<void>;
-    toggleTodo: (id: string) => Promise<void>;
-    clearCompleted: () => Promise<void>;
-    refreshTodos: () => Promise<void>;
+export interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
 }
