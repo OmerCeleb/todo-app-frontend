@@ -1,0 +1,22 @@
+<!-- public/favicon.svg -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background with gradient -->
+    <rect width="64" height="64" rx="12" fill="url(#gradient)"/>
+
+    <!-- Gradient definition -->
+    <defs>
+        <linearGradient id="gradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#9333ea"/>
+        </linearGradient>
+    </defs>
+
+    <!-- CheckSquare icon -->
+    <g transform="translate(12, 12)">
+        <!-- Square -->
+        <rect x="2" y="2" width="36" height="36" rx="4" stroke="white" stroke-width="3" fill="none"/>
+
+        <!-- Check mark -->
+        <polyline points="12,20 18,26 28,14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+</svg>
