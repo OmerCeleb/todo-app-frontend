@@ -1,6 +1,18 @@
 // src/components/Header/Header.tsx
 import { useState } from 'react';
-import { Plus, Search, Menu, X, LogOut, BarChart3, Settings as SettingsIcon, CheckSquare, Sun, Moon, Monitor } from 'lucide-react';
+import {
+    Plus,
+    Search,
+    Menu,
+    X,
+    LogOut,
+    BarChart3,
+    Settings as SettingsIcon,
+    Sun,
+    Moon,
+    Monitor,
+    CheckSquare
+} from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import type { ThemeMode } from '../../hooks/useTheme';
@@ -30,7 +42,6 @@ export function Header({
                            onLogout,
                            onDashboardClick,
                            onSettingsClick,
-                           showDashboard = false,
                        }: HeaderProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -41,9 +52,9 @@ export function Header({
 
     const getThemeIcon = () => {
         switch (theme) {
-            case 'light': return <Sun className="w-4 h-4" />;
-            case 'dark': return <Moon className="w-4 h-4" />;
-            default: return <Monitor className="w-4 h-4" />;
+            case 'light': return <Sun className="w-5 h-5" />;
+            case 'dark': return <Moon className="w-5 h-5" />;
+            default: return <Monitor className="w-5 h-5" />;
         }
     };
 
@@ -58,40 +69,31 @@ export function Header({
         <header className={`sticky top-0 z-50 ${cardClasses} backdrop-blur-md border-b shadow-sm transition-all duration-300`}>
             <div className="max-w-7xl mx-auto">
                 {/* Main Header */}
-                <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8 gap-3">
                     {/* Left: Logo & Brand */}
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
                             aria-label="Toggle menu"
                         >
-                            {isMobileMenuOpen ? (
-                                <X className="w-5 h-5" />
-                            ) : (
-                                <Menu className="w-5 h-5" />
-                            )}
+                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
 
-                        {/* Logo */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95">
+                        {/* Logo & Title */}
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
                                 <CheckSquare className="w-5 h-5 text-white" />
                             </div>
-                            <div className="hidden sm:block">
-                                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                    Todo App
-                                </h1>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Smart task management
-                                </p>
-                            </div>
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent hidden sm:block truncate">
+                                TaskMaster
+                            </h1>
                         </div>
                     </div>
 
-                    {/* Center: Search (Desktop) */}
-                    <div className="hidden lg:flex flex-1 max-w-md mx-6">
+                    {/* Center: Search Bar (Desktop) */}
+                    <div className="hidden lg:flex flex-1 max-w-2xl mx-4">
                         <Input
                             placeholder="Search todos..."
                             value={searchQuery}
@@ -102,7 +104,7 @@ export function Header({
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         {/* Mobile Search Toggle */}
                         <button
                             onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -112,38 +114,42 @@ export function Header({
                             <Search className="w-5 h-5" />
                         </button>
 
-                        {/* Theme Toggle */}
+                        {/* Theme Toggle - İYİLEŞTİRİLDİ */}
                         <button
                             onClick={toggleTheme}
-                            className="hidden sm:flex p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
-                            aria-label="Toggle theme"
-                            title={`Theme: ${theme}`}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-110 flex items-center justify-center touch-target"
+                            aria-label={`Switch to ${theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'} mode`}
+                            title={`Current: ${theme}`}
                         >
-                            {getThemeIcon()}
+                            <div className="relative w-5 h-5 flex items-center justify-center">
+                                {getThemeIcon()}
+                            </div>
                         </button>
 
-                        {/* Dashboard Button (Desktop) */}
+                        {/* Dashboard Button */}
                         {onDashboardClick && (
                             <Button
-                                variant={showDashboard ? 'primary' : 'ghost'}
+                                variant="ghost"
                                 size="sm"
                                 onClick={onDashboardClick}
                                 icon={<BarChart3 className="w-4 h-4" />}
-                                className="hidden lg:flex"
+                                className="hidden lg:inline-flex"
                             >
-                                Dashboard
+                                <span className="hidden xl:inline">Dashboard</span>
                             </Button>
                         )}
 
-                        {/* Settings Button (Desktop) */}
+                        {/* Settings Button */}
                         {onSettingsClick && (
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={onSettingsClick}
                                 icon={<SettingsIcon className="w-4 h-4" />}
-                                className="hidden lg:flex"
-                            />
+                                className="hidden lg:inline-flex"
+                            >
+                                <span className="hidden xl:inline">Settings</span>
+                            </Button>
                         )}
 
                         {/* Add Todo Button */}
@@ -152,19 +158,19 @@ export function Header({
                             size="sm"
                             onClick={onAddTodo}
                             icon={<Plus className="w-4 h-4" />}
-                            className="shadow-md hover:shadow-lg transition-all touch-target"
+                            className="shadow-lg hover:shadow-xl"
                         >
-                            <span className="hidden sm:inline">Add Task</span>
+                            <span className="hidden sm:inline">Add Todo</span>
                         </Button>
 
-                        {/* User Menu (Desktop) */}
+                        {/* User Menu */}
                         {userName && onLogout && (
-                            <div className="hidden lg:flex items-center gap-3 pl-3 ml-3 border-l border-gray-300 dark:border-gray-600">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm flex-shrink-0">
                                         {userName.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm font-medium hidden xl:inline">
+                                    <span className="text-sm font-medium hidden xl:inline truncate max-w-[120px]">
                                         {userName}
                                     </span>
                                 </div>
@@ -174,6 +180,7 @@ export function Header({
                                     onClick={onLogout}
                                     icon={<LogOut className="w-4 h-4" />}
                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    aria-label="Logout"
                                 />
                             </div>
                         )}
@@ -228,9 +235,7 @@ export function Header({
 
                             {/* Theme Selector */}
                             <button
-                                onClick={() => {
-                                    toggleTheme();
-                                }}
+                                onClick={toggleTheme}
                                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left touch-target"
                             >
                                 {getThemeIcon()}
@@ -239,31 +244,26 @@ export function Header({
                                 </span>
                             </button>
 
-                            {/* User Info & Logout */}
+                            {/* User Info & Logout (Mobile) */}
                             {userName && onLogout && (
-                                <>
-                                    <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 mt-2 pt-4">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-lg font-semibold">
+                                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                    <div className="flex items-center gap-3 px-4 py-2">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-sm">
                                             {userName.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">{userName}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                Signed in
-                                            </p>
-                                        </div>
+                                        <span className="font-medium">{userName}</span>
                                     </div>
                                     <button
                                         onClick={() => {
                                             onLogout();
                                             setIsMobileMenuOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left touch-target"
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors text-left touch-target"
                                     >
                                         <LogOut className="w-5 h-5" />
                                         <span className="font-medium">Logout</span>
                                     </button>
-                                </>
+                                </div>
                             )}
                         </div>
                     </div>

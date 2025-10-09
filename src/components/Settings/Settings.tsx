@@ -1,10 +1,27 @@
-// src/components/Settings/Settings.tsx - Type Errors Fixed
+// src/components/Settings/Settings.tsx
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Upload, Trash2, FileText, File, FileDown } from 'lucide-react';
+import {
+    Save,
+    Download,
+    Upload,
+    Trash2,
+    FileText,
+    FileDown,
+    Settings as SettingsIcon,
+    Palette,
+    Bell,
+    Volume2,
+    Eye,
+    CheckCircle,
+    AlertCircle
+} from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import type { TodoFormData, Todo } from '../TodoForm';
 
+/**
+ * Settings component props
+ */
 interface SettingsProps {
     isOpen: boolean;
     onClose: () => void;
@@ -13,6 +30,9 @@ interface SettingsProps {
     onSettingsChange?: (settings: AppSettings) => void;
 }
 
+/**
+ * Application settings interface
+ */
 export interface AppSettings {
     defaultPriority: 'low' | 'medium' | 'high';
     autoMarkOverdue: boolean;
@@ -24,6 +44,9 @@ export interface AppSettings {
     theme: 'light' | 'dark' | 'system';
 }
 
+/**
+ * Default settings configuration
+ */
 const defaultSettings: AppSettings = {
     defaultPriority: 'medium',
     autoMarkOverdue: true,
@@ -35,14 +58,27 @@ const defaultSettings: AppSettings = {
     theme: 'system',
 };
 
-export function Settings({ isOpen, onClose, onImportTodos, onSettingsChange }: SettingsProps) {
+/**
+ * Settings Component
+ * Manages application preferences and data import/export
+ */
+export function Settings({
+                             isOpen,
+                             onClose,
+                             onImportTodos,
+                             onSettingsChange,
+                             darkMode = false
+                         }: SettingsProps) {
+    // State
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [hasChanges, setHasChanges] = useState(false);
     const [importing, setImporting] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [importStatus, setImportStatus] = useState<string>('');
 
-    // Load settings from localStorage on mount
+    /**
+     * Load settings from localStorage when modal opens
+     */
     useEffect(() => {
         if (isOpen) {
             const savedSettings = localStorage.getItem('app-settings');
@@ -56,10 +92,13 @@ export function Settings({ isOpen, onClose, onImportTodos, onSettingsChange }: S
                 }
             }
             setHasChanges(false);
+            setImportStatus('');
         }
     }, [isOpen]);
 
-    // Handle settings change
+    /**
+     * Handle individual setting changes
+     */
     const handleSettingChange = (key: keyof AppSettings, value: any) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
@@ -72,464 +111,396 @@ export function Settings({ isOpen, onClose, onImportTodos, onSettingsChange }: S
         }
     };
 
-    // Save settings
+    /**
+     * Save settings to localStorage
+     */
     const handleSaveSettings = () => {
         try {
             localStorage.setItem('app-settings', JSON.stringify(settings));
             setHasChanges(false);
-
-            // Notify parent component about settings change
             onSettingsChange?.(settings);
 
             // Show success message
-            const event = new CustomEvent('settings-saved', { detail: settings });
-            window.dispatchEvent(event);
+            setImportStatus('✅ Settings saved successfully!');
 
             // Auto-close after save
             setTimeout(() => {
                 onClose();
-            }, 1000);
+            }, 1500);
         } catch (error) {
             console.error('Failed to save settings:', error);
-            setImportStatus('Failed to save settings');
+            setImportStatus('❌ Failed to save settings');
         }
     };
 
-    // Generate PDF Export
-    const generatePDFExport = (todos: Todo[], settings: AppSettings) => {
-        const date = new Date().toLocaleDateString();
-        const stats = {
-            total: todos.length,
-            completed: todos.filter((t: Todo) => t.completed).length,
-            active: todos.filter((t: Todo) => !t.completed).length,
-            overdue: todos.filter((t: Todo) => t.dueDate && new Date(t.dueDate) < new Date() && !t.completed).length
-        };
-
-        const pdfContent = `
-TODO APP EXPORT REPORT
-Generated: ${date}
-
-STATISTICS:
-- Total Todos: ${stats.total}
-- Completed: ${stats.completed}
-- Active: ${stats.active}
-- Overdue: ${stats.overdue}
-
-TODOS LIST:
-${todos.map((todo, index) => `
-${index + 1}. ${todo.title}
-   Status: ${todo.completed ? '✅ Completed' : '⏳ Active'}
-   Priority: ${todo.priority.toUpperCase()}
-   Category: ${todo.category || 'None'}
-   Due Date: ${todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'None'}
-   Description: ${todo.description || 'No description'}
-   Created: ${new Date(todo.createdAt).toLocaleDateString()}
-   ---
-`).join('')}
-
-SETTINGS:
-- Default Priority: ${settings.defaultPriority}
-- Theme: ${settings.theme}
-- Compact View: ${settings.compactView ? 'Enabled' : 'Disabled'}
-- Notifications: ${settings.notifications ? 'Enabled' : 'Disabled'}
-- Auto-save: ${settings.autoSave ? 'Enabled' : 'Disabled'}
-- Show Completed: ${settings.showCompletedTasks ? 'Enabled' : 'Disabled'}
-
----
-Export generated by Modern Todo App
-`;
-
-        return pdfContent;
+    /**
+     * Reset settings to defaults
+     */
+    const handleResetSettings = () => {
+        // eslint-disable-next-line no-restricted-globals
+        if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
+            setSettings(defaultSettings);
+            setHasChanges(true);
+            setImportStatus('🔄 Settings reset to defaults. Click Save to apply.');
+        }
     };
 
-    // Export data in multiple formats
-    const handleExportData = async (format: 'json' | 'pdf' | 'txt') => {
-        setExporting(true);
+    /**
+     * Export todos as JSON
+     */
+    const handleExportJSON = () => {
         try {
+            setExporting(true);
             const todosJson = localStorage.getItem('todos') || '[]';
-            const todos: Todo[] = JSON.parse(todosJson);
-            const timestamp = new Date().toISOString().split('T')[0];
+            const todos = JSON.parse(todosJson);
 
-            if (format === 'json') {
-                const exportData = {
-                    todos,
-                    settings,
-                    exportDate: new Date().toISOString(),
-                    version: '1.0.0',
-                    stats: {
-                        total: todos.length,
-                        completed: todos.filter((t: Todo) => t.completed).length,
-                        active: todos.filter((t: Todo) => !t.completed).length,
-                    }
-                };
+            const dataStr = JSON.stringify({ todos, settings }, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
 
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `todo-app-backup-${timestamp}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `todos-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
 
-            } else if (format === 'pdf' || format === 'txt') {
-                const content = generatePDFExport(todos, settings);
-                const blob = new Blob([content], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `todo-app-report-${timestamp}.${format === 'pdf' ? 'txt' : 'txt'}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            setImportStatus(`${format.toUpperCase()} export completed successfully!`);
-            setTimeout(() => setImportStatus(''), 3000);
-
+            URL.revokeObjectURL(url);
+            setImportStatus('✅ Data exported successfully!');
         } catch (error) {
             console.error('Export failed:', error);
-            setImportStatus('Export failed!');
+            setImportStatus('❌ Export failed');
         } finally {
             setExporting(false);
         }
     };
 
-    // Parse text and extract todos
-    const extractTodosFromText = (text: string): TodoFormData[] => {
-        const todos: TodoFormData[] = [];
-        const lines = text.split('\n').filter(line => line.trim());
+    /**
+     * Export todos as CSV
+     */
+    const handleExportCSV = () => {
+        try {
+            setExporting(true);
+            const todosJson = localStorage.getItem('todos') || '[]';
+            const todos: Todo[] = JSON.parse(todosJson);
 
-        for (const line of lines) {
-            const trimmed = line.trim();
+            // CSV Headers
+            const headers = ['Title', 'Description', 'Priority', 'Category', 'Status', 'Due Date', 'Created', 'Updated'];
 
-            // Skip empty lines and headers
-            if (!trimmed || trimmed.length < 3) continue;
+            // CSV Rows
+            const rows = todos.map(todo => [
+                todo.title,
+                todo.description || '',
+                todo.priority,
+                todo.category || '',
+                todo.completed ? 'Completed' : 'Active',
+                todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : '',
+                new Date(todo.createdAt).toLocaleDateString(),
+                new Date(todo.updatedAt).toLocaleDateString()
+            ]);
 
-            // Clean up common list markers
-            let title = trimmed
-                .replace(/^[-*•]\s*/, '') // Remove bullet points
-                .replace(/^\d+\.\s*/, '') // Remove numbered lists
-                .replace(/^[✓✗☐☑]\s*/, '') // Remove checkboxes
-                .replace(/^TODO:?\s*/i, '') // Remove TODO: prefix
-                .replace(/^TASK:?\s*/i, '') // Remove TASK: prefix
-                .trim();
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(cell => `"${cell}"`).join(','))
+                .join('\n');
 
-            if (title.length < 2) continue;
+            const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(dataBlob);
 
-            // Extract priority from keywords
-            let priority: 'LOW' | 'MEDIUM' | 'HIGH' = settings.defaultPriority.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH';
-            if (/urgent|high|important|critical|asap/i.test(title)) {
-                priority = 'HIGH';
-                title = title.replace(/\s*\(urgent\)|\s*\(high\)|\s*\(important\)|\s*\(critical\)|\s*\(asap\)/gi, '');
-            } else if (/low|minor|optional/i.test(title)) {
-                priority = 'LOW';
-                title = title.replace(/\s*\(low\)|\s*\(minor\)|\s*\(optional\)/gi, '');
-            }
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `todos-export-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
 
-            // Extract category from brackets or tags
-            let category = '';
-            const categoryMatch = title.match(/\[([^\]]+)\]|\#(\w+)/);
-            if (categoryMatch) {
-                category = categoryMatch[1] || categoryMatch[2];
-                title = title.replace(/\s*\[[^\]]+\]|\s*\#\w+/g, '');
-            }
-
-            // Extract due date
-            let dueDate = '';
-            const dateMatch = title.match(/due:?\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i);
-            if (dateMatch) {
-                dueDate = dateMatch[1];
-                title = title.replace(/due:?\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/gi, '');
-            }
-
-            // Clean up title
-            title = title.trim().replace(/\s+/g, ' ');
-
-            if (title.length >= 2) {
-                todos.push({
-                    title,
-                    description: '',
-                    priority,
-                    category: category || '',
-                    dueDate: dueDate || ''
-                });
-            }
+            URL.revokeObjectURL(url);
+            setImportStatus('✅ CSV exported successfully!');
+        } catch (error) {
+            console.error('CSV export failed:', error);
+            setImportStatus('❌ CSV export failed');
+        } finally {
+            setExporting(false);
         }
-
-        return todos;
     };
 
-    // Import data from file
-    const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    /**
+     * Import todos from JSON file
+     */
+    const handleImportJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         setImporting(true);
-        setImportStatus('Processing file...');
+        const reader = new FileReader();
 
-        try {
-            if (file.type === 'application/json') {
-                // Handle JSON files
-                const text = await file.text();
-                const data = JSON.parse(text);
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const data = JSON.parse(content);
 
-                let todos: TodoFormData[] = [];
+                if (data.todos && Array.isArray(data.todos)) {
+                    onImportTodos?.(data.todos);
 
-                if (Array.isArray(data)) {
-                    // Direct array of todos
-                    todos = data;
-                } else if (data.todos && Array.isArray(data.todos)) {
-                    // Backup file format
-                    todos = data.todos;
-                    // Also restore settings if available
                     if (data.settings) {
-                        const newSettings = { ...defaultSettings, ...data.settings };
-                        setSettings(newSettings);
-                        setHasChanges(true);
-                        localStorage.setItem('app-settings', JSON.stringify(newSettings));
-                        onSettingsChange?.(newSettings);
+                        setSettings({ ...defaultSettings, ...data.settings });
+                        localStorage.setItem('app-settings', JSON.stringify(data.settings));
                     }
+
+                    setImportStatus(`✅ Successfully imported ${data.todos.length} todos!`);
                 } else {
-                    throw new Error('Invalid JSON format');
+                    setImportStatus('❌ Invalid file format');
                 }
-
-                if (onImportTodos && todos.length > 0) {
-                    onImportTodos(todos);
-                    setImportStatus(`Successfully imported ${todos.length} todos from JSON!`);
-                } else {
-                    setImportStatus('No valid todos found in JSON file');
-                }
-
-            } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-                // Handle text files
-                const text = await file.text();
-                const extractedTodos = extractTodosFromText(text);
-
-                if (onImportTodos && extractedTodos.length > 0) {
-                    onImportTodos(extractedTodos);
-                    setImportStatus(`Successfully extracted ${extractedTodos.length} todos from text!`);
-                } else {
-                    setImportStatus('No todos found in text file');
-                }
-
-            } else {
-                // Try to read as text for other formats
-                const text = await file.text();
-                const extractedTodos = extractTodosFromText(text);
-
-                if (extractedTodos.length > 0) {
-                    if (onImportTodos) {
-                        onImportTodos(extractedTodos);
-                        setImportStatus(`Successfully extracted ${extractedTodos.length} todos!`);
-                    }
-                } else {
-                    setImportStatus('Unsupported file format or no todos found');
-                }
+            } catch (error) {
+                console.error('Import failed:', error);
+                setImportStatus('❌ Failed to import data');
+            } finally {
+                setImporting(false);
             }
-        } catch (error) {
-            console.error('Import error:', error);
-            setImportStatus('Failed to import file. Please check the format.');
-        } finally {
-            setImporting(false);
-            // Reset file input
-            event.target.value = '';
+        };
 
-            // Clear status after 5 seconds
-            setTimeout(() => setImportStatus(''), 5000);
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input
+    };
+
+    /**
+     * Clear all data
+     */
+    const handleClearData = () => {
+        // eslint-disable-next-line no-restricted-globals
+        if (window.confirm('⚠️ This will delete ALL todos and settings. Are you sure?')) {
+            // eslint-disable-next-line no-restricted-globals
+            if (window.confirm('⚠️ FINAL WARNING: This action cannot be undone!')) {
+                localStorage.clear();
+                setSettings(defaultSettings);
+                setImportStatus('🗑️ All data cleared');
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
         }
     };
 
-    // Clear all data
-    const handleClearAllData = () => {
-        if (window.confirm('Are you sure you want to delete all data? This cannot be undone.')) {
-            localStorage.removeItem('todos');
-            localStorage.removeItem('app-settings');
-            setSettings(defaultSettings);
-            setHasChanges(false);
-            onSettingsChange?.(defaultSettings);
-            setImportStatus('All data cleared successfully!');
-            setTimeout(() => setImportStatus(''), 3000);
-        }
-    };
+    // Styling classes
+    const cardClasses = darkMode
+        ? 'bg-gray-700/50 border-gray-600'
+        : 'bg-gray-50 border-gray-200';
 
-    // Reset settings to default
-    const handleResetSettings = () => {
-        if (window.confirm('Reset all settings to default values?')) {
-            setSettings(defaultSettings);
-            setHasChanges(true);
-        }
-    };
+    const inputClasses = darkMode
+        ? 'bg-gray-700 border-gray-600 text-white'
+        : 'bg-white border-gray-300 text-gray-900';
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Settings" size="xl">
-            <div className="max-h-[80vh] overflow-y-auto">
-                <div className="space-y-6 p-1">
-                    {/* Import Status */}
-                    {importStatus && (
-                        <div className={`p-3 rounded-lg text-sm ${
-                            importStatus.includes('Success') || importStatus.includes('successfully')
-                                ? 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-                                : importStatus.includes('Failed') || importStatus.includes('error')
-                                    ? 'bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
-                                    : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-                        }`}>
-                            {importStatus}
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="⚙️ Settings"
+            size="xl"
+        >
+            <div className="space-y-6">
+                {/* Status Message */}
+                {importStatus && (
+                    <div className={`p-3 rounded-lg border text-sm font-medium animate-fade-in ${
+                        importStatus.includes('✅')
+                            ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                            : importStatus.includes('❌')
+                                ? 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                                : 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                    }`}>
+                        {importStatus}
+                    </div>
+                )}
+
+                {/* General Settings Section */}
+                <div className={`p-4 sm:p-5 rounded-xl border ${cardClasses}`}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
+                            <SettingsIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                    )}
+                        <h3 className="text-lg font-bold">General Settings</h3>
+                    </div>
 
-                    {/* General Settings */}
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">General Settings</h3>
-                        <div className="space-y-4">
-                            {/* Priority and Theme Row */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                        Default Priority
-                                    </label>
-                                    <select
-                                        value={settings.defaultPriority}
-                                        onChange={(e) => handleSettingChange('defaultPriority', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                                    >
-                                        <option value="low">Low Priority</option>
-                                        <option value="medium">Medium Priority</option>
-                                        <option value="high">High Priority</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                        Theme
-                                    </label>
-                                    <select
-                                        value={settings.theme}
-                                        onChange={(e) => handleSettingChange('theme', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                                    >
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                        <option value="system">System</option>
-                                    </select>
-                                </div>
+                    <div className="space-y-4">
+                        {/* Priority and Theme */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                                    <CheckCircle className="w-4 h-4" />
+                                    Default Priority
+                                </label>
+                                <select
+                                    value={settings.defaultPriority}
+                                    onChange={(e) => handleSettingChange('defaultPriority', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${inputClasses}`}
+                                >
+                                    <option value="low">🟢 Low Priority</option>
+                                    <option value="medium">🟡 Medium Priority</option>
+                                    <option value="high">🔴 High Priority</option>
+                                </select>
                             </div>
 
-                            {/* Settings Checkboxes - Responsive Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {[
-                                    { key: 'autoMarkOverdue', label: 'Auto-mark overdue', description: 'Automatically mark tasks as overdue' },
-                                    { key: 'notifications', label: 'Notifications', description: 'Show notification messages' },
-                                    { key: 'soundEffects', label: 'Sound effects', description: 'Play sounds for actions' },
-                                    { key: 'compactView', label: 'Compact view', description: 'Use smaller spacing' },
-                                    { key: 'showCompletedTasks', label: 'Show completed', description: 'Display completed todos' },
-                                    { key: 'autoSave', label: 'Auto-save', description: 'Save changes automatically' },
-                                ].map(({ key, label, description }) => (
-                                    <label key={key} className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings[key as keyof AppSettings] as boolean}
-                                            onChange={(e) => handleSettingChange(key as keyof AppSettings, e.target.checked)}
-                                            className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{label}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{description}</div>
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                                    <Palette className="w-4 h-4" />
+                                    Theme
+                                </label>
+                                <select
+                                    value={settings.theme}
+                                    onChange={(e) => handleSettingChange('theme', e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${inputClasses}`}
+                                >
+                                    <option value="light">☀️ Light</option>
+                                    <option value="dark">🌙 Dark</option>
+                                    <option value="system">💻 System</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Toggle Settings */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                                {
+                                    key: 'autoMarkOverdue',
+                                    label: 'Auto-mark Overdue',
+                                    description: 'Automatically mark past-due tasks',
+                                    icon: AlertCircle
+                                },
+                                {
+                                    key: 'notifications',
+                                    label: 'Notifications',
+                                    description: 'Show notification messages',
+                                    icon: Bell
+                                },
+                                {
+                                    key: 'soundEffects',
+                                    label: 'Sound Effects',
+                                    description: 'Play sounds for actions',
+                                    icon: Volume2
+                                },
+                                {
+                                    key: 'compactView',
+                                    label: 'Compact View',
+                                    description: 'Use smaller spacing',
+                                    icon: Eye
+                                },
+                                {
+                                    key: 'showCompletedTasks',
+                                    label: 'Show Completed',
+                                    description: 'Display completed todos',
+                                    icon: CheckCircle
+                                },
+                                {
+                                    key: 'autoSave',
+                                    label: 'Auto-save',
+                                    description: 'Save changes automatically',
+                                    icon: Save
+                                },
+                            ].map(({ key, label, description, icon: Icon }) => (
+                                <label
+                                    key={key}
+                                    className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                                        settings[key as keyof AppSettings]
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                                    }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={settings[key as keyof AppSettings] as boolean}
+                                        onChange={(e) => handleSettingChange(key as keyof AppSettings, e.target.checked)}
+                                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Icon className="w-4 h-4 flex-shrink-0" />
+                                            <span className="text-sm font-semibold">{label}</span>
                                         </div>
-                                    </label>
-                                ))}
-                            </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">{description}</p>
+                                    </div>
+                                </label>
+                            ))}
                         </div>
                     </div>
+                </div>
 
-                    {/* Export Options */}
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Export Data</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => handleExportData('json')}
-                                icon={<Download className="w-4 h-4" />}
-                                disabled={exporting}
-                                className="justify-start"
-                            >
-                                Export JSON
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={() => handleExportData('txt')}
-                                icon={<FileDown className="w-4 h-4" />}
-                                disabled={exporting}
-                                className="justify-start"
-                            >
-                                Export TXT Report
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={() => handleExportData('pdf')}
-                                icon={<FileText className="w-4 h-4" />}
-                                disabled={exporting}
-                                className="justify-start"
-                            >
-                                Export PDF Report
-                            </Button>
+                {/* Data Management Section */}
+                <div className={`p-4 sm:p-5 rounded-xl border ${cardClasses}`}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         </div>
+                        <h3 className="text-lg font-bold">Data Management</h3>
                     </div>
 
-                    {/* Import Data */}
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Import Data</h3>
-                        <div className="space-y-4">
-                            <label className="inline-block w-full">
+                    <div className="space-y-4">
+                        {/* Export Options */}
+                        <div>
+                            <label className="block text-sm font-semibold mb-3">
+                                Export Data
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <Button
                                     variant="outline"
-                                    icon={importing ? <FileText className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                    disabled={importing}
-                                    className="w-full justify-start"
+                                    onClick={handleExportJSON}
+                                    disabled={exporting}
+                                    icon={<Download className="w-4 h-4" />}
+                                    className="justify-center"
                                 >
-                                    {importing ? 'Processing...' : 'Import Data'}
+                                    Export as JSON
                                 </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleExportCSV}
+                                    disabled={exporting}
+                                    icon={<FileDown className="w-4 h-4" />}
+                                    className="justify-center"
+                                >
+                                    Export as CSV
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Import Option */}
+                        <div>
+                            <label className="block text-sm font-semibold mb-3">
+                                Import Data
+                            </label>
+                            <label className="block">
                                 <input
                                     type="file"
-                                    accept=".json,.txt,.pdf,text/plain,application/json,application/pdf"
-                                    onChange={handleImportData}
-                                    className="hidden"
+                                    accept=".json"
+                                    onChange={handleImportJSON}
                                     disabled={importing}
+                                    className="hidden"
+                                    id="import-file"
                                 />
+                                <Button
+                                    variant="outline"
+                                    onClick={() => document.getElementById('import-file')?.click()}
+                                    disabled={importing}
+                                    icon={<Upload className="w-4 h-4" />}
+                                    className="w-full justify-center"
+                                >
+                                    {importing ? 'Importing...' : 'Import from JSON'}
+                                </Button>
                             </label>
+                        </div>
 
-                            {/* Import Instructions */}
-                            <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                                <div className="font-medium mb-2">📥 Import formats supported:</div>
-                                <div className="space-y-1 ml-2">
-                                    <div>• <strong>JSON:</strong> Todo app backup files or todo arrays</div>
-                                    <div>• <strong>Text/TXT:</strong> Simple text lists (auto-extracts todos)</div>
-                                    <div>• <strong>Others:</strong> Will attempt to extract todos from text content</div>
-                                </div>
-                                <div className="mt-2 font-medium">🤖 Auto-extraction features:</div>
-                                <div className="ml-2 text-xs">Detects priorities (urgent, high, low), categories [category], due dates, and cleans formatting.</div>
-                            </div>
-
-                            {/* Management Actions */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        {/* Danger Zone */}
+                        <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
+                            <label className="block text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
+                                Danger Zone
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <Button
                                     variant="outline"
                                     onClick={handleResetSettings}
-                                    icon={<File className="w-4 h-4" />}
-                                    className="justify-start"
+                                    icon={<SettingsIcon className="w-4 h-4" />}
+                                    className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
                                 >
                                     Reset Settings
                                 </Button>
-
                                 <Button
-                                    variant="danger"
-                                    onClick={handleClearAllData}
+                                    variant="outline"
+                                    onClick={handleClearData}
                                     icon={<Trash2 className="w-4 h-4" />}
-                                    className="justify-start"
+                                    className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                                 >
                                     Clear All Data
                                 </Button>
@@ -537,22 +508,26 @@ Export generated by Modern Todo App
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Fixed Actions Footer */}
-            <div className="flex gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button variant="outline" onClick={onClose} className="flex-1">
-                    Cancel
-                </Button>
-                <Button
-                    variant="primary"
-                    onClick={handleSaveSettings}
-                    icon={<Save className="w-4 h-4" />}
-                    className="flex-1"
-                    disabled={!hasChanges}
-                >
-                    {hasChanges ? 'Save Changes' : 'Saved'}
-                </Button>
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        className="flex-1 sm:flex-none"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleSaveSettings}
+                        disabled={!hasChanges}
+                        icon={<Save className="w-4 h-4" />}
+                        className="flex-1 shadow-lg hover:shadow-xl"
+                    >
+                        {hasChanges ? 'Save Changes' : 'No Changes'}
+                    </Button>
+                </div>
             </div>
         </Modal>
     );
