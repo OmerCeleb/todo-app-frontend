@@ -1,4 +1,4 @@
-// src/hooks/useTheme.ts - Düzeltilmiş versiyon
+// src/hooks/useTheme.ts
 
 import { useState, useEffect } from 'react';
 

@@ -126,21 +126,3 @@ export function Modal({
     // Render modal in portal
     return createPortal(modalContent, document.body);
 }
-
-// Modal header component for custom headers
-export function ModalHeader({ children, className }: { children: ReactNode; className?: string }) {
-    return (
-        <div className={cn('flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-600', className)}>
-            {children}
-        </div>
-    );
-}
-
-// Modal footer component for action buttons
-export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
-    return (
-        <div className={cn('flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700', className)}>
-            {children}
-        </div>
-    );
-}

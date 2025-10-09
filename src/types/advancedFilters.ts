@@ -39,28 +39,5 @@ export interface AdvancedFilterOptions {
     // Display options
     showArchived: boolean;
     maxResults: number;
-}
 
-export const defaultAdvancedFilters: AdvancedFilterOptions = {
-    dateRange: { start: null, end: null },
-    createdRange: { start: null, end: null },
-    updatedRange: { start: null, end: null },
-    titleContains: '',
-    descriptionContains: '',
-    excludeText: '',
-    priorities: [],
-    categories: [],
-    tags: [],
-    completionStatus: 'all',
-    completedInRange: { start: null, end: null },
-    hasDescription: null,
-    hasDueDate: null,
-    hasCategory: null,
-    isOverdue: null,
-    isDueSoon: null,
-    sortBy: 'created',
-    sortOrder: 'desc',
-    groupBy: 'none',
-    showArchived: false,
-    maxResults: 100,
 };

@@ -1,4 +1,6 @@
 // src/components/Header/Header.tsx
+// Bu dosyayı TAMAMEN değiştir
+
 import { useState } from 'react';
 import {
     Plus,
@@ -11,7 +13,8 @@ import {
     Sun,
     Moon,
     Monitor,
-    CheckSquare
+    CheckSquare,
+    User
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -44,17 +47,13 @@ export function Header({
                            onSettingsClick,
                        }: HeaderProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-    const cardClasses = isDarkMode
-        ? 'bg-gray-800/95 border-gray-700'
-        : 'bg-white/95 border-gray-200';
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     const getThemeIcon = () => {
         switch (theme) {
-            case 'light': return <Sun className="w-5 h-5" />;
-            case 'dark': return <Moon className="w-5 h-5" />;
-            default: return <Monitor className="w-5 h-5" />;
+            case 'light': return <Sun className="w-4 h-4" />;
+            case 'dark': return <Moon className="w-4 h-4" />;
+            default: return <Monitor className="w-4 h-4" />;
         }
     };
 
@@ -66,91 +65,68 @@ export function Header({
     };
 
     return (
-        <header className={`sticky top-0 z-50 ${cardClasses} backdrop-blur-md border-b shadow-sm transition-all duration-300`}>
-            <div className="max-w-7xl mx-auto">
-                {/* Main Header */}
-                <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8 gap-3">
-                    {/* Left: Logo & Brand */}
-                    <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-                        {/* Mobile Menu Button */}
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
-                            aria-label="Toggle menu"
-                        >
-                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
-
-                        {/* Logo & Title */}
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                <CheckSquare className="w-5 h-5 text-white" />
+        <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    {/* Left Section - Logo & Navigation */}
+                    <div className="flex items-center gap-8">
+                        {/* Logo */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <CheckSquare className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent hidden sm:block truncate">
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent hidden sm:block">
                                 TaskMaster
                             </h1>
                         </div>
+
+                        {/* Desktop Navigation */}
+                        <nav className="hidden lg:flex items-center gap-1">
+                            {onDashboardClick && (
+                                <button
+                                    onClick={onDashboardClick}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+                                >
+                                    <BarChart3 className="w-4 h-4" />
+                                    <span>Dashboard</span>
+                                </button>
+                            )}
+                            {onSettingsClick && (
+                                <button
+                                    onClick={onSettingsClick}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+                                >
+                                    <SettingsIcon className="w-4 h-4" />
+                                    <span>Settings</span>
+                                </button>
+                            )}
+                        </nav>
                     </div>
 
-                    {/* Center: Search Bar (Desktop) */}
-                    <div className="hidden lg:flex flex-1 max-w-2xl mx-4">
-                        <Input
-                            placeholder="Search todos..."
-                            value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                            leftIcon={<Search className="w-4 h-4" />}
-                            className="w-full"
-                        />
+                    {/* Center Section - Search (Desktop) */}
+                    <div className="hidden md:flex flex-1 max-w-md mx-8">
+                        <div className="relative w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search todos..."
+                                value={searchQuery}
+                                onChange={(e) => onSearchChange(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                            />
+                        </div>
                     </div>
 
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* Mobile Search Toggle */}
-                        <button
-                            onClick={() => setIsSearchOpen(!isSearchOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
-                            aria-label="Toggle search"
-                        >
-                            <Search className="w-5 h-5" />
-                        </button>
-
-                        {/* Theme Toggle - İYİLEŞTİRİLDİ */}
+                    {/* Right Section - Actions */}
+                    <div className="flex items-center gap-2">
+                        {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-110 flex items-center justify-center touch-target"
-                            aria-label={`Switch to ${theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'} mode`}
-                            title={`Current: ${theme}`}
+                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+                            title={`Current theme: ${theme}`}
                         >
-                            <div className="relative w-5 h-5 flex items-center justify-center">
-                                {getThemeIcon()}
-                            </div>
+                            {getThemeIcon()}
                         </button>
-
-                        {/* Dashboard Button */}
-                        {onDashboardClick && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={onDashboardClick}
-                                icon={<BarChart3 className="w-4 h-4" />}
-                                className="hidden lg:inline-flex"
-                            >
-                                <span className="hidden xl:inline">Dashboard</span>
-                            </Button>
-                        )}
-
-                        {/* Settings Button */}
-                        {onSettingsClick && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={onSettingsClick}
-                                icon={<SettingsIcon className="w-4 h-4" />}
-                                className="hidden lg:inline-flex"
-                            >
-                                <span className="hidden xl:inline">Settings</span>
-                            </Button>
-                        )}
 
                         {/* Add Todo Button */}
                         <Button
@@ -158,117 +134,147 @@ export function Header({
                             size="sm"
                             onClick={onAddTodo}
                             icon={<Plus className="w-4 h-4" />}
-                            className="shadow-lg hover:shadow-xl"
+                            className="hidden sm:flex"
                         >
-                            <span className="hidden sm:inline">Add Todo</span>
+                            Add Todo
                         </Button>
 
-                        {/* User Menu */}
+                        {/* Mobile Add Button (Icon Only) */}
+                        <button
+                            onClick={onAddTodo}
+                            className="sm:hidden p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
+
+                        {/* User Menu (Desktop) */}
                         {userName && onLogout && (
-                            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm flex-shrink-0">
+                            <div className="hidden md:block relative">
+                                <button
+                                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                    className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                                         {userName.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm font-medium hidden xl:inline truncate max-w-[120px]">
+                                    <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-300">
                                         {userName}
                                     </span>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={onLogout}
-                                    icon={<LogOut className="w-4 h-4" />}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                    aria-label="Logout"
-                                />
+                                </button>
+
+                                {/* User Dropdown */}
+                                {isUserMenuOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-10"
+                                            onClick={() => setIsUserMenuOpen(false)}
+                                        />
+                                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
+                                            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {userName}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    onLogout();
+                                                    setIsUserMenuOpen(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                <span>Logout</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
+
+                        {/* Mobile Menu Toggle */}
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="lg:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+                        >
+                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
                     </div>
                 </div>
 
                 {/* Mobile Search Bar */}
-                {isSearchOpen && (
-                    <div className="lg:hidden px-4 pb-3 animate-slideDown">
-                        <Input
+                <div className="md:hidden pb-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
                             placeholder="Search todos..."
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
-                            leftIcon={<Search className="w-4 h-4" />}
-                            className="w-full"
-                            autoFocus
+                            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                         />
                     </div>
-                )}
-
-                {/* Mobile Menu */}
-                {isMobileMenuOpen && (
-                    <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 animate-slideDown">
-                        <div className="px-4 py-3 space-y-2">
-                            {/* Dashboard Button */}
-                            {onDashboardClick && (
-                                <button
-                                    onClick={() => {
-                                        onDashboardClick();
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left touch-target"
-                                >
-                                    <BarChart3 className="w-5 h-5" />
-                                    <span className="font-medium">Dashboard</span>
-                                </button>
-                            )}
-
-                            {/* Settings Button */}
-                            {onSettingsClick && (
-                                <button
-                                    onClick={() => {
-                                        onSettingsClick();
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left touch-target"
-                                >
-                                    <SettingsIcon className="w-5 h-5" />
-                                    <span className="font-medium">Settings</span>
-                                </button>
-                            )}
-
-                            {/* Theme Selector */}
-                            <button
-                                onClick={toggleTheme}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left touch-target"
-                            >
-                                {getThemeIcon()}
-                                <span className="font-medium">
-                                    Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
-                                </span>
-                            </button>
-
-                            {/* User Info & Logout (Mobile) */}
-                            {userName && onLogout && (
-                                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
-                                    <div className="flex items-center gap-3 px-4 py-2">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-sm">
-                                            {userName.charAt(0).toUpperCase()}
-                                        </div>
-                                        <span className="font-medium">{userName}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            onLogout();
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors text-left touch-target"
-                                    >
-                                        <LogOut className="w-5 h-5" />
-                                        <span className="font-medium">Logout</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
+
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+                <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                    <div className="px-4 py-3 space-y-1">
+                        {/* Navigation Items */}
+                        {onDashboardClick && (
+                            <button
+                                onClick={() => {
+                                    onDashboardClick();
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
+                                <BarChart3 className="w-5 h-5" />
+                                <span>Dashboard</span>
+                            </button>
+                        )}
+
+                        {onSettingsClick && (
+                            <button
+                                onClick={() => {
+                                    onSettingsClick();
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
+                                <SettingsIcon className="w-5 h-5" />
+                                <span>Settings</span>
+                            </button>
+                        )}
+
+                        {/* User Section (Mobile) */}
+                        {userName && onLogout && (
+                            <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-800 space-y-1">
+                                <div className="flex items-center gap-3 px-4 py-2">
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-sm">
+                                        {userName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                            {userName}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        onLogout();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </header>
     );
 }

@@ -326,7 +326,7 @@ export const FocusManager = {
     }
 };
 
-export default {
+const AccessibilityUtils = {
     generateId,
     announceToScreenReader,
     FocusTrap,
@@ -339,3 +339,5 @@ export default {
     checkColorContrast,
     FocusManager
 };
+
+export default AccessibilityUtils;

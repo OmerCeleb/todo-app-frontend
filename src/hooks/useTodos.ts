@@ -6,7 +6,7 @@ import { getDateFilters, type DateFilter } from '../utils/dateUtils';
 // FilterOptions interface - MUST match TodoFilters
 export interface FilterOptions {
     status: 'all' | 'active' | 'completed';
-    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';  // Backend formatına uygun
+    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
     category: string;
     dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
     sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';

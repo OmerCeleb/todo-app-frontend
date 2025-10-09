@@ -1,4 +1,5 @@
 // src/hooks/usePerformance.ts
+import * as React from 'react';
 import { useEffect, useRef, useCallback } from 'react';
 
 /**
@@ -205,6 +206,3 @@ export function useNetworkStatus() {
 
     return isOnline;
 }
-
-// Import React for useNetworkStatus
-import * as React from 'react';

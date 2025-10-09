@@ -120,11 +120,13 @@ export function useTodosAPI(): UseTodosAPIReturn {
         loadTodos();
         loadCategories();
         loadStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Reload todos when filters change
     useEffect(() => {
         loadTodos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
     // Update stats when todos change

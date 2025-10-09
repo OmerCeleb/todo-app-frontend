@@ -1,23 +1,25 @@
 // src/components/Settings/Settings.tsx
+// Bu dosyayı TAMAMEN değiştir
+
 import React, { useState, useEffect } from 'react';
 import {
     Save,
     Download,
     Upload,
     Trash2,
-    FileText,
-    FileDown,
     Settings as SettingsIcon,
-    Palette,
     Bell,
     Volume2,
     Eye,
     CheckCircle,
-    AlertCircle
+    X,
+    AlertTriangle,
+    Sun,
+    Moon,
+    Monitor
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
-import type { TodoFormData, Todo } from '../TodoForm';
+import type { TodoFormData } from '../TodoForm';
 
 /**
  * Settings component props
@@ -28,6 +30,8 @@ interface SettingsProps {
     darkMode?: boolean;
     onImportTodos?: (todos: TodoFormData[]) => void;
     onSettingsChange?: (settings: AppSettings) => void;
+    onThemeChange?: (theme: 'light' | 'dark' | 'system') => void;
+    currentTheme?: 'light' | 'dark' | 'system';
 }
 
 /**
@@ -67,6 +71,8 @@ export function Settings({
                              onClose,
                              onImportTodos,
                              onSettingsChange,
+                             onThemeChange,
+                             currentTheme = 'system',
                              darkMode = false
                          }: SettingsProps) {
     // State
@@ -119,101 +125,39 @@ export function Settings({
             localStorage.setItem('app-settings', JSON.stringify(settings));
             setHasChanges(false);
             onSettingsChange?.(settings);
-
-            // Show success message
             setImportStatus('✅ Settings saved successfully!');
-
-            // Auto-close after save
-            setTimeout(() => {
-                onClose();
-            }, 1500);
+            setTimeout(() => setImportStatus(''), 3000);
         } catch (error) {
-            console.error('Failed to save settings:', error);
+            console.error('Error saving settings:', error);
             setImportStatus('❌ Failed to save settings');
         }
     };
 
     /**
-     * Reset settings to defaults
+     * Export todos to JSON file
      */
-    const handleResetSettings = () => {
-        // eslint-disable-next-line no-restricted-globals
-        if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
-            setSettings(defaultSettings);
-            setHasChanges(true);
-            setImportStatus('🔄 Settings reset to defaults. Click Save to apply.');
-        }
-    };
-
-    /**
-     * Export todos as JSON
-     */
-    const handleExportJSON = () => {
+    const handleExportData = async () => {
+        setExporting(true);
         try {
-            setExporting(true);
-            const todosJson = localStorage.getItem('todos') || '[]';
-            const todos = JSON.parse(todosJson);
+            const todosData = localStorage.getItem('todos');
+            const todos = todosData ? JSON.parse(todosData) : [];
 
-            const dataStr = JSON.stringify({ todos, settings }, null, 2);
+            const dataStr = JSON.stringify(todos, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
-
             const link = document.createElement('a');
             link.href = url;
-            link.download = `todos-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `todos-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
             link.click();
-
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
+
             setImportStatus('✅ Data exported successfully!');
+            setTimeout(() => setImportStatus(''), 3000);
         } catch (error) {
-            console.error('Export failed:', error);
-            setImportStatus('❌ Export failed');
-        } finally {
-            setExporting(false);
-        }
-    };
-
-    /**
-     * Export todos as CSV
-     */
-    const handleExportCSV = () => {
-        try {
-            setExporting(true);
-            const todosJson = localStorage.getItem('todos') || '[]';
-            const todos: Todo[] = JSON.parse(todosJson);
-
-            // CSV Headers
-            const headers = ['Title', 'Description', 'Priority', 'Category', 'Status', 'Due Date', 'Created', 'Updated'];
-
-            // CSV Rows
-            const rows = todos.map(todo => [
-                todo.title,
-                todo.description || '',
-                todo.priority,
-                todo.category || '',
-                todo.completed ? 'Completed' : 'Active',
-                todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : '',
-                new Date(todo.createdAt).toLocaleDateString(),
-                new Date(todo.updatedAt).toLocaleDateString()
-            ]);
-
-            const csvContent = [headers, ...rows]
-                .map(row => row.map(cell => `"${cell}"`).join(','))
-                .join('\n');
-
-            const dataBlob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(dataBlob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `todos-export-${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-
-            URL.revokeObjectURL(url);
-            setImportStatus('✅ CSV exported successfully!');
-        } catch (error) {
-            console.error('CSV export failed:', error);
-            setImportStatus('❌ CSV export failed');
+            console.error('Error exporting data:', error);
+            setImportStatus('❌ Failed to export data');
         } finally {
             setExporting(false);
         }
@@ -222,7 +166,7 @@ export function Settings({
     /**
      * Import todos from JSON file
      */
-    const handleImportJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -232,102 +176,213 @@ export function Settings({
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const data = JSON.parse(content);
+                const importedTodos = JSON.parse(content);
 
-                if (data.todos && Array.isArray(data.todos)) {
-                    onImportTodos?.(data.todos);
-
-                    if (data.settings) {
-                        setSettings({ ...defaultSettings, ...data.settings });
-                        localStorage.setItem('app-settings', JSON.stringify(data.settings));
-                    }
-
-                    setImportStatus(`✅ Successfully imported ${data.todos.length} todos!`);
+                if (Array.isArray(importedTodos)) {
+                    onImportTodos?.(importedTodos);
+                    setImportStatus(`✅ Successfully imported ${importedTodos.length} todos!`);
+                    setTimeout(() => setImportStatus(''), 3000);
                 } else {
-                    setImportStatus('❌ Invalid file format');
+                    throw new Error('Invalid file format');
                 }
             } catch (error) {
-                console.error('Import failed:', error);
-                setImportStatus('❌ Failed to import data');
+                console.error('Error importing data:', error);
+                setImportStatus('❌ Failed to import data. Please check file format.');
             } finally {
                 setImporting(false);
+                event.target.value = '';
             }
         };
 
         reader.readAsText(file);
-        event.target.value = ''; // Reset input
+    };
+
+    /**
+     * Reset settings to defaults
+     */
+    const handleResetSettings = () => {
+        if (window.confirm('Are you sure you want to reset all settings to default?')) {
+            setSettings(defaultSettings);
+            setHasChanges(true);
+            setImportStatus('⚠️ Settings reset. Click Save to apply.');
+        }
     };
 
     /**
      * Clear all data
      */
     const handleClearData = () => {
-        // eslint-disable-next-line no-restricted-globals
-        if (window.confirm('⚠️ This will delete ALL todos and settings. Are you sure?')) {
-            // eslint-disable-next-line no-restricted-globals
-            if (window.confirm('⚠️ FINAL WARNING: This action cannot be undone!')) {
-                localStorage.clear();
-                setSettings(defaultSettings);
-                setImportStatus('🗑️ All data cleared');
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            }
+        if (window.confirm('⚠️ This will delete ALL your todos and settings. This action cannot be undone!')) {
+            localStorage.clear();
+            setSettings(defaultSettings);
+            setHasChanges(false);
+            setImportStatus('✅ All data cleared!');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         }
     };
 
-    // Styling classes
-    const cardClasses = darkMode
-        ? 'bg-gray-700/50 border-gray-600'
-        : 'bg-gray-50 border-gray-200';
+    /**
+     * Get theme icon
+     */
+    const getThemeIcon = (theme: string) => {
+        switch (theme) {
+            case 'light': return <Sun className="w-4 h-4" />;
+            case 'dark': return <Moon className="w-4 h-4" />;
+            default: return <Monitor className="w-4 h-4" />;
+        }
+    };
 
-    const inputClasses = darkMode
-        ? 'bg-gray-700 border-gray-600 text-white'
-        : 'bg-white border-gray-300 text-gray-900';
+    if (!isOpen) return null;
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="⚙️ Settings"
-            size="xl"
-        >
-            <div className="space-y-6">
-                {/* Status Message */}
-                {importStatus && (
-                    <div className={`p-3 rounded-lg border text-sm font-medium animate-fade-in ${
-                        importStatus.includes('✅')
-                            ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-                            : importStatus.includes('❌')
-                                ? 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
-                                : 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-                    }`}>
-                        {importStatus}
-                    </div>
-                )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+            {/* Backdrop */}
+            <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={onClose}
+            />
 
-                {/* General Settings Section */}
-                <div className={`p-4 sm:p-5 rounded-xl border ${cardClasses}`}>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
-                            <SettingsIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            {/* Modal */}
+            <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-scale-in border ${
+                darkMode
+                    ? 'bg-gray-900 border-gray-800'
+                    : 'bg-white border-gray-200'
+            }`}>
+                {/* Header */}
+                <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${
+                    darkMode ? 'border-gray-800' : 'border-gray-200'
+                }`}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            <SettingsIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-lg font-bold">General Settings</h3>
+                        <h2 className={`text-xl sm:text-2xl font-bold ${
+                            darkMode ? 'text-white' : 'text-gray-900'
+                        }`}>Settings</h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className={`p-2 rounded-lg transition-colors ${
+                            darkMode
+                                ? 'hover:bg-gray-800 text-gray-400'
+                                : 'hover:bg-gray-100 text-gray-500'
+                        }`}
+                        aria-label="Close"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 sm:p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                    {/* Status Message */}
+                    {importStatus && (
+                        <div className={`p-3 sm:p-4 rounded-lg border text-sm font-medium ${
+                            importStatus.includes('✅')
+                                ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                                : importStatus.includes('❌')
+                                    ? 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                                    : 'bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800'
+                        }`}>
+                            {importStatus}
+                        </div>
+                    )}
+
+                    {/* Theme Switcher Section */}
+                    <div className={`p-4 sm:p-6 rounded-xl border ${
+                        darkMode
+                            ? 'bg-gray-800/50 border-gray-700'
+                            : 'bg-gray-50 border-gray-200'
+                    }`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                darkMode
+                                    ? 'bg-purple-900/30'
+                                    : 'bg-gradient-to-br from-purple-100 to-purple-200'
+                            }`}>
+                                {getThemeIcon(currentTheme)}
+                            </div>
+                            <h3 className={`text-lg font-bold ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>Appearance</h3>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { value: 'light', label: 'Light', icon: Sun },
+                                { value: 'dark', label: 'Dark', icon: Moon },
+                                { value: 'system', label: 'System', icon: Monitor },
+                            ].map(({ value, label, icon: Icon }) => (
+                                <button
+                                    key={value}
+                                    onClick={() => onThemeChange?.(value as any)}
+                                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                        currentTheme === value
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                            : darkMode
+                                                ? 'border-gray-700 bg-gray-700/50 hover:border-gray-600'
+                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                    }`}
+                                >
+                                    <Icon className={`w-5 h-5 ${
+                                        currentTheme === value
+                                            ? 'text-blue-600 dark:text-blue-400'
+                                            : darkMode
+                                                ? 'text-gray-400'
+                                                : 'text-gray-600'
+                                    }`} />
+                                    <span className={`text-sm font-medium ${
+                                        currentTheme === value
+                                            ? 'text-blue-600 dark:text-blue-400'
+                                            : darkMode
+                                                ? 'text-gray-300'
+                                                : 'text-gray-700'
+                                    }`}>{label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="space-y-4">
-                        {/* Priority and Theme */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* General Settings */}
+                    <div className={`p-4 sm:p-6 rounded-xl border ${
+                        darkMode
+                            ? 'bg-gray-800/50 border-gray-700'
+                            : 'bg-gray-50 border-gray-200'
+                    }`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                darkMode
+                                    ? 'bg-blue-900/30'
+                                    : 'bg-gradient-to-br from-blue-100 to-blue-200'
+                            }`}>
+                                <SettingsIcon className={`w-5 h-5 ${
+                                    darkMode ? 'text-blue-400' : 'text-blue-600'
+                                }`} />
+                            </div>
+                            <h3 className={`text-lg font-bold ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>General Settings</h3>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Default Priority */}
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                                <label className={`flex items-center gap-2 text-sm font-semibold mb-2 ${
+                                    darkMode ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
                                     <CheckCircle className="w-4 h-4" />
                                     Default Priority
                                 </label>
                                 <select
                                     value={settings.defaultPriority}
                                     onChange={(e) => handleSettingChange('defaultPriority', e.target.value)}
-                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${inputClasses}`}
+                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                                        darkMode
+                                            ? 'bg-gray-700 border-gray-600 text-white'
+                                            : 'bg-white border-gray-300 text-gray-900'
+                                    }`}
                                 >
                                     <option value="low">🟢 Low Priority</option>
                                     <option value="medium">🟡 Medium Priority</option>
@@ -335,186 +390,147 @@ export function Settings({
                                 </select>
                             </div>
 
-                            <div>
-                                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                                    <Palette className="w-4 h-4" />
-                                    Theme
-                                </label>
-                                <select
-                                    value={settings.theme}
-                                    onChange={(e) => handleSettingChange('theme', e.target.value)}
-                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${inputClasses}`}
-                                >
-                                    <option value="light">☀️ Light</option>
-                                    <option value="dark">🌙 Dark</option>
-                                    <option value="system">💻 System</option>
-                                </select>
+                            {/* Toggle Settings */}
+                            <div className="grid grid-cols-1 gap-3">
+                                {[
+                                    { key: 'autoMarkOverdue', label: 'Auto-mark overdue tasks', icon: AlertTriangle, description: 'Automatically mark tasks as overdue when due date passes' },
+                                    { key: 'notifications', label: 'Enable notifications', icon: Bell, description: 'Show browser notifications for important events' },
+                                    { key: 'soundEffects', label: 'Sound effects', icon: Volume2, description: 'Play sounds for task completion and other actions' },
+                                    { key: 'compactView', label: 'Compact view', icon: Eye, description: 'Use a more compact layout to fit more items on screen' },
+                                    { key: 'showCompletedTasks', label: 'Show completed tasks', icon: CheckCircle, description: 'Display completed tasks in the list' },
+                                    { key: 'autoSave', label: 'Auto-save settings', icon: Save, description: 'Automatically save changes without clicking Save' },
+                                ].map(({ key, label, icon: Icon, description }) => (
+                                    <label
+                                        key={key}
+                                        className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                                            settings[key as keyof AppSettings]
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                : darkMode
+                                                    ? 'border-gray-700 hover:border-gray-600 bg-gray-700/50'
+                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={settings[key as keyof AppSettings] as boolean}
+                                            onChange={(e) => handleSettingChange(key as keyof AppSettings, e.target.checked)}
+                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Icon className={`w-4 h-4 flex-shrink-0 ${
+                                                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                                                }`} />
+                                                <span className={`text-sm font-semibold ${
+                                                    darkMode ? 'text-white' : 'text-gray-900'
+                                                }`}>{label}</span>
+                                            </div>
+                                            <p className={`text-xs ${
+                                                darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>{description}</p>
+                                        </div>
+                                    </label>
+                                ))}
                             </div>
                         </div>
-
-                        {/* Toggle Settings */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {[
-                                {
-                                    key: 'autoMarkOverdue',
-                                    label: 'Auto-mark Overdue',
-                                    description: 'Automatically mark past-due tasks',
-                                    icon: AlertCircle
-                                },
-                                {
-                                    key: 'notifications',
-                                    label: 'Notifications',
-                                    description: 'Show notification messages',
-                                    icon: Bell
-                                },
-                                {
-                                    key: 'soundEffects',
-                                    label: 'Sound Effects',
-                                    description: 'Play sounds for actions',
-                                    icon: Volume2
-                                },
-                                {
-                                    key: 'compactView',
-                                    label: 'Compact View',
-                                    description: 'Use smaller spacing',
-                                    icon: Eye
-                                },
-                                {
-                                    key: 'showCompletedTasks',
-                                    label: 'Show Completed',
-                                    description: 'Display completed todos',
-                                    icon: CheckCircle
-                                },
-                                {
-                                    key: 'autoSave',
-                                    label: 'Auto-save',
-                                    description: 'Save changes automatically',
-                                    icon: Save
-                                },
-                            ].map(({ key, label, description, icon: Icon }) => (
-                                <label
-                                    key={key}
-                                    className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                                        settings[key as keyof AppSettings]
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                                    }`}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={settings[key as keyof AppSettings] as boolean}
-                                        onChange={(e) => handleSettingChange(key as keyof AppSettings, e.target.checked)}
-                                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Icon className="w-4 h-4 flex-shrink-0" />
-                                            <span className="text-sm font-semibold">{label}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">{description}</p>
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Data Management Section */}
-                <div className={`p-4 sm:p-5 rounded-xl border ${cardClasses}`}>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <h3 className="text-lg font-bold">Data Management</h3>
                     </div>
 
-                    <div className="space-y-4">
-                        {/* Export Options */}
-                        <div>
-                            <label className="block text-sm font-semibold mb-3">
-                                Export Data
-                            </label>
+                    {/* Data Management */}
+                    <div className={`p-4 sm:p-6 rounded-xl border ${
+                        darkMode
+                            ? 'bg-gray-800/50 border-gray-700'
+                            : 'bg-gray-50 border-gray-200'
+                    }`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                darkMode
+                                    ? 'bg-green-900/30'
+                                    : 'bg-gradient-to-br from-green-100 to-green-200'
+                            }`}>
+                                <Download className={`w-5 h-5 ${
+                                    darkMode ? 'text-green-400' : 'text-green-600'
+                                }`} />
+                            </div>
+                            <h3 className={`text-lg font-bold ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>Data Management</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Export/Import Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <Button
                                     variant="outline"
-                                    onClick={handleExportJSON}
+                                    onClick={handleExportData}
                                     disabled={exporting}
                                     icon={<Download className="w-4 h-4" />}
                                     className="justify-center"
                                 >
-                                    Export as JSON
+                                    {exporting ? 'Exporting...' : 'Export Data'}
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleExportCSV}
-                                    disabled={exporting}
-                                    icon={<FileDown className="w-4 h-4" />}
-                                    className="justify-center"
-                                >
-                                    Export as CSV
-                                </Button>
+
+                                <label className="w-full cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={handleImportData}
+                                        disabled={importing}
+                                        className="hidden"
+                                    />
+                                    <div className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 font-medium text-sm ${
+                                        importing
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'cursor-pointer'
+                                    } ${
+                                        darkMode
+                                            ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600'
+                                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}>
+                                        <Upload className="w-4 h-4" />
+                                        <span>{importing ? 'Importing...' : 'Import Data'}</span>
+                                    </div>
+                                </label>
                             </div>
-                        </div>
 
-                        {/* Import Option */}
-                        <div>
-                            <label className="block text-sm font-semibold mb-3">
-                                Import Data
-                            </label>
-                            <label className="block">
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    onChange={handleImportJSON}
-                                    disabled={importing}
-                                    className="hidden"
-                                    id="import-file"
-                                />
-                                <Button
-                                    variant="outline"
-                                    onClick={() => document.getElementById('import-file')?.click()}
-                                    disabled={importing}
-                                    icon={<Upload className="w-4 h-4" />}
-                                    className="w-full justify-center"
-                                >
-                                    {importing ? 'Importing...' : 'Import from JSON'}
-                                </Button>
-                            </label>
-                        </div>
-
-                        {/* Danger Zone */}
-                        <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
-                            <label className="block text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
-                                Danger Zone
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleResetSettings}
-                                    icon={<SettingsIcon className="w-4 h-4" />}
-                                    className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
-                                >
-                                    Reset Settings
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleClearData}
-                                    icon={<Trash2 className="w-4 h-4" />}
-                                    className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                                >
-                                    Clear All Data
-                                </Button>
+                            {/* Danger Zone */}
+                            <div className={`pt-4 border-t ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                            }`}>
+                                <label className="flex items-center gap-2 text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    Danger Zone
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleResetSettings}
+                                        icon={<SettingsIcon className="w-4 h-4" />}
+                                        className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                                    >
+                                        Reset Settings
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleClearData}
+                                        icon={<Trash2 className="w-4 h-4" />}
+                                        className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    >
+                                        Clear All Data
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Footer */}
+                <div className={`flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t ${
+                    darkMode ? 'border-gray-800' : 'border-gray-200'
+                }`}>
                     <Button
                         variant="outline"
                         onClick={onClose}
-                        className="flex-1 sm:flex-none"
+                        className="flex-1 sm:flex-none sm:w-32"
                     >
                         Cancel
                     </Button>
@@ -523,12 +539,12 @@ export function Settings({
                         onClick={handleSaveSettings}
                         disabled={!hasChanges}
                         icon={<Save className="w-4 h-4" />}
-                        className="flex-1 shadow-lg hover:shadow-xl"
+                        className="flex-1 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {hasChanges ? 'Save Changes' : 'No Changes'}
                     </Button>
                 </div>
             </div>
-        </Modal>
+        </div>
     );
 }

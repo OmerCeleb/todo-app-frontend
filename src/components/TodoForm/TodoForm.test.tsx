@@ -1,7 +1,7 @@
 // src/components/TodoForm/TodoForm.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TodoForm, type TodoFormData } from './TodoForm';
+import { TodoForm } from './TodoForm';
 
 describe('TodoForm', () => {
     const mockOnSubmit = jest.fn();

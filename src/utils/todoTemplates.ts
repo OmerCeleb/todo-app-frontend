@@ -1,4 +1,5 @@
 // src/utils/todoTemplates.ts
+import { useState, useEffect } from 'react';
 import type { TodoFormData } from '../components/TodoForm';
 
 export interface TodoTemplate {
@@ -537,9 +538,6 @@ export class TodoTemplatesManager {
         localStorage.removeItem(this.USAGE_KEY);
     }
 }
-
-// React hook for templates
-import { useState, useEffect } from 'react';
 
 export function useTodoTemplates() {
     const [templates, setTemplates] = useState<TodoTemplate[]>([]);

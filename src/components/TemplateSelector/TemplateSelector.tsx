@@ -16,7 +16,7 @@ import {
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
-import { useTodoTemplates, TodoTemplate } from '../../utils/todoTemplates';
+import {useTodoTemplates, TodoTemplate, TodoTemplatesManager} from '../../utils/todoTemplates';
 import type { TodoFormData } from '../TodoForm';
 
 interface TemplateSelectorProps {
@@ -213,7 +213,6 @@ export function TemplateSelector({
     const {
         templates,
         customTemplates,
-        useTemplate,
         deleteTemplate,
         getMostUsedTemplates,
     } = useTodoTemplates();
@@ -265,22 +264,20 @@ export function TemplateSelector({
     const mostUsedTemplates = getMostUsedTemplates(3);
 
     const handleSelectTemplate = (template: TodoTemplate) => {
-        const templateData = useTemplate(template.id);
-        if (templateData) {
-            // Convert template tasks to TodoFormData
-            const todos: TodoFormData[] = template.taskTitles.map((title, index) => ({
-                title,
-                description: template.tasks[index]?.description || '',
-                priority: template.tasks[index]?.priority || 'medium',
-                category: template.tasks[index]?.category || template.category,
-                dueDate: template.tasks[index]?.dueDate || '',
-            }));
 
-            onSelectTemplate(todos);
-            onClose();
-        }
+        TodoTemplatesManager.trackTemplateUsage(template.id);
+
+        const todos: TodoFormData[] = template.taskTitles.map((title, index) => ({
+            title,
+            description: template.tasks[index]?.description || '',
+            priority: template.tasks[index]?.priority || 'MEDIUM',
+            category: template.tasks[index]?.category || template.category,
+            dueDate: template.tasks[index]?.dueDate || '',
+        }));
+
+        onSelectTemplate(todos);
+        onClose();
     };
-
     const handleDeleteTemplate = (templateId: string) => {
         if (window.confirm('Are you sure you want to delete this template?')) {
             deleteTemplate(templateId);

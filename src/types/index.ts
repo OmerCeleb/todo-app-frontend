@@ -46,27 +46,5 @@ export interface User {
     email: string;
     role: 'USER' | 'ADMIN';
     createdAt: string;
-}
 
-export interface AuthState {
-    user: User | null;
-    token: string | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-}
-
-export interface ApiResponse<T> {
-    data: T;
-    message?: string;
-    success?: boolean;
-}
-
-export interface PaginatedResponse<T> {
-    data: T[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
 }

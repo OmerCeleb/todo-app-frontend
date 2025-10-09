@@ -1,4 +1,4 @@
-// src/App.tsx - Clean and organized version
+// src/App.tsx - Complete Fixed Version
 import { useState, useCallback, useEffect } from 'react';
 
 // Component imports
@@ -23,7 +23,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTheme } from './hooks/useTheme';
 import { useTodosAPI } from './hooks/useTodosAPI';
 import { useDebounce } from './hooks/useDebounce';
-//import { useOfflineSync } from './hooks/useOfflineSync';
 
 // Type imports
 import type { Todo, TodoFormData } from './components/TodoForm';
@@ -131,13 +130,11 @@ function MainApp() {
             try {
                 const parsed = JSON.parse(savedSettings);
                 setAppSettings(prev => ({ ...prev, ...parsed }));
-
             } catch (error) {
                 console.error('Failed to parse settings:', error);
             }
         }
     }, []);
-
 
     // ============================================
     // HANDLERS
@@ -158,6 +155,23 @@ function MainApp() {
             localStorage.setItem('app-settings', JSON.stringify(newSettings));
         }
     }, [theme, setTheme]);
+
+    const handleImportTodos = useCallback(async (importedTodos: TodoFormData[]) => {
+        try {
+            for (const todoData of importedTodos) {
+                await apiCreateTodo(todoData);
+            }
+            if (appSettings.notifications) {
+                showSuccess(`Successfully imported ${importedTodos.length} todos!`, 3000);
+            }
+            await refreshTodos();
+        } catch (error) {
+            console.error('Failed to import todos:', error);
+            if (appSettings.notifications) {
+                showError('Failed to import some todos. Please try again.', 5000);
+            }
+        }
+    }, [apiCreateTodo, appSettings.notifications, showSuccess, showError, refreshTodos]);
 
     const createTodo = async (formData: TodoFormData) => {
         try {
@@ -225,56 +239,72 @@ function MainApp() {
         } catch (error) {
             console.error('Failed to toggle todo:', error);
             if (appSettings.notifications) {
-                showError('Failed to update todo status. Please try again.', 5000);
+                showError('Failed to update todo status.', 3000);
             }
         }
     };
 
     const handleBulkDelete = async () => {
-        if (selectedTodos.size === 0) return;
         try {
             await apiBulkDelete(Array.from(selectedTodos));
             if (appSettings.notifications) {
                 showDelete(`${selectedTodos.size} todos deleted successfully!`, 3000);
             }
             setSelectedTodos(new Set());
+            setIsDeleteConfirmOpen(false);
+            setDeletingTodos([]);
         } catch (error) {
-            console.error('Failed to bulk delete todos:', error);
+            console.error('Failed to bulk delete:', error);
             if (appSettings.notifications) {
                 showError('Failed to delete todos. Please try again.', 5000);
             }
         }
     };
 
-    const handleTodoReorder = async (reorderedTodos: Todo[]) => {
-        try {
-            await apiReorderTodos(reorderedTodos);
-            if (appSettings.notifications) {
-                showSuccess('Todo order updated!', 1500);
-            }
-        } catch (error) {
-            console.error('Failed to reorder todos:', error);
-            if (appSettings.notifications) {
-                showError('Failed to reorder todos. Please try again.', 3000);
-            }
-        }
+    const handleEdit = (todo: Todo) => {
+        setEditingTodo(todo);
+        setIsEditModalOpen(true);
     };
 
-    const handleTodoSelect = (id: string, selected: boolean) => {
-        const newSelected = new Set(selectedTodos);
-        if (selected) {
-            newSelected.add(id);
-        } else {
-            newSelected.delete(id);
-        }
-        setSelectedTodos(newSelected);
+    const handleDeleteSingle = (id: string) => {
+        setDeletingTodos([id]);
+        setIsDeleteConfirmOpen(true);
     };
+
+    // ========== Filtered Todos ==========
+    const filteredTodos = todos.filter(todo => {
+        // Search filter
+        if (debouncedSearchQuery) {
+            const query = debouncedSearchQuery.toLowerCase();
+            const matchesSearch =
+                todo.title.toLowerCase().includes(query) ||
+                (todo.description && todo.description.toLowerCase().includes(query)) ||
+                (todo.category && todo.category.toLowerCase().includes(query));
+            if (!matchesSearch) return false;
+        }
+
+        // Status filter
+        if (filters.status === 'active' && todo.completed) return false;
+        if (filters.status === 'completed' && !todo.completed) return false;
+
+        // Priority filter
+        if (filters.priority && filters.priority !== 'all' && todo.priority !== filters.priority.toUpperCase()) {
+            return false;
+        }
+
+        // Category filter
+        if (filters.category && filters.category !== 'all' && todo.category !== filters.category) {
+            return false;
+        }
+
+        return true;
+    });
 
     // ============================================
     // RENDER
     // ============================================
     return (
-        <div className={`min-h-screen transition-colors duration-300 ${
+        <div className={`min-h-screen transition-colors duration-200 ${
             isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
         }`}>
             {/* Modern Header */}
@@ -341,34 +371,34 @@ function MainApp() {
                         {/* Content */}
                         {error ? (
                             <ErrorState
-                                title="Failed to load todos"
                                 message={error}
                                 onRetry={refreshTodos}
                             />
                         ) : loading ? (
-                            <LoadingState message="Loading your todos..." />
-                        ) : todos.length === 0 ? (
+                            <LoadingState />
+                        ) : filteredTodos.length === 0 ? (
                             <EmptyState
-                                type="no-todos"
+                                type={debouncedSearchQuery ? 'no-search-results' : 'no-todos'}
                                 searchQuery={debouncedSearchQuery}
                                 onCreateTodo={() => setIsAddModalOpen(true)}
-                                onClearFilters={() => setSearchQuery('')}
                             />
                         ) : (
                             <TodoListView
-                                todos={todos}
-                                onToggle={toggleTodo}
-                                onEdit={(todo: Todo) => {
-                                    setEditingTodo(todo);
-                                    setIsEditModalOpen(true);
-                                }}
-                                onDelete={(id: string) => {
-                                    setDeletingTodos([id]);
-                                    setIsDeleteConfirmOpen(true);
-                                }}
-                                onReorder={handleTodoReorder}
-                                onSelect={handleTodoSelect}
+                                todos={filteredTodos}
                                 selectedTodos={selectedTodos}
+                                onToggle={toggleTodo}
+                                onEdit={handleEdit}
+                                onDelete={handleDeleteSingle}
+                                onReorder={apiReorderTodos}
+                                onSelect={(id: string, selected: boolean) => {
+                                    const newSelected = new Set(selectedTodos);
+                                    if (selected) {
+                                        newSelected.add(id);
+                                    } else {
+                                        newSelected.delete(id);
+                                    }
+                                    setSelectedTodos(newSelected);
+                                }}
                                 isDarkMode={isDarkMode}
                             />
                         )}
@@ -380,20 +410,24 @@ function MainApp() {
             {isAddModalOpen && (
                 <TodoForm
                     isOpen={isAddModalOpen}
-                    onSubmit={createTodo}
                     onClose={() => setIsAddModalOpen(false)}
+                    onSubmit={(data) => createTodo(data)}
+                    mode="add"
+                    darkMode={isDarkMode}
                 />
             )}
 
             {isEditModalOpen && editingTodo && (
                 <TodoForm
                     isOpen={isEditModalOpen}
-                    todo={editingTodo}
-                    onSubmit={(formData) => updateTodo(editingTodo.id, formData)}
                     onClose={() => {
                         setIsEditModalOpen(false);
                         setEditingTodo(null);
                     }}
+                    onSubmit={(data) => updateTodo(editingTodo.id, data)}
+                    todo={editingTodo}
+                    mode="edit"
+                    darkMode={isDarkMode}
                 />
             )}
 
@@ -401,18 +435,21 @@ function MainApp() {
                 <Settings
                     isOpen={isSettingsOpen}
                     onClose={() => setIsSettingsOpen(false)}
+                    darkMode={isDarkMode}
+                    onThemeChange={setTheme}
+                    currentTheme={theme}
+                    onImportTodos={handleImportTodos}
                     onSettingsChange={handleSettingsChange}
-                    onImportTodos={(todos) => {
-                        todos.forEach(todo => createTodo(todo));
-                    }}
                 />
             )}
 
             {isDeleteConfirmOpen && (
                 <ConfirmDialog
                     isOpen={isDeleteConfirmOpen}
-                    title="Delete Todo"
-                    message={`Are you sure you want to delete ${deletingTodos.length} todo(s)? This action cannot be undone.`}
+                    title={deletingTodos.length === 1 ? 'Delete Todo?' : `Delete ${deletingTodos.length} Todos?`}
+                    message={`Are you sure you want to delete ${
+                        deletingTodos.length === 1 ? 'this todo' : 'these todos'
+                    }? This action cannot be undone.`}
                     confirmText="Delete"
                     cancelText="Cancel"
                     onConfirm={() => {

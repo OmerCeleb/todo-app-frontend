@@ -100,7 +100,7 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
                     {/* Toggle Button */}
                     <button
                         onClick={toggleExpanded}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex-1 sm:flex-none ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-gray-100  flex-1 sm:flex-none ${
                             isExpanded ? 'bg-gray-50 dark:bg-gray-700' : ''
                         }`}
                     >
