@@ -16,7 +16,6 @@ const statusOptions = [
     { value: 'completed', label: 'Completed', icon: '✅' },
 ];
 
-// ✅ FIXED: Changed to uppercase to match backend enum values
 const priorityOptions = [
     { value: 'all', label: 'All Priorities', icon: '🏷️' },
     { value: 'HIGH', label: 'High', icon: '🔴', color: 'text-red-600 dark:text-red-400' },
@@ -77,71 +76,75 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
     ].filter(Boolean).length;
 
     const cardClasses = darkMode
-        ? 'bg-gray-800/50 border-gray-700 backdrop-blur-sm'
-        : 'bg-white/50 border-gray-200 backdrop-blur-sm';
+        ? 'bg-gray-800 border-gray-700 text-gray-100'
+        : 'bg-white border-gray-200 text-gray-900';
 
-    // ✅ FIXED: Added proper text color classes for dark mode visibility
     const selectClasses = darkMode
-        ? 'bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600'
-        : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50';
+        ? 'bg-gray-700 border-gray-600 text-gray-100 focus:border-blue-500'
+        : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500';
 
     const buttonClasses = darkMode
-        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
-        : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300';
-
-    const textClasses = darkMode ? 'text-gray-200' : 'text-gray-900';
-    const subtextClasses = darkMode ? 'text-gray-400' : 'text-gray-600';
+        ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600'
+        : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300';
 
     return (
-        <div className={`border rounded-xl shadow-sm overflow-hidden transition-all duration-300 ${cardClasses}`}>
-            {/* Header */}
-            <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors"
-                onClick={toggleExpanded}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                        <Filter className="w-5 h-5 text-white" />
+        <div className={`rounded-xl border shadow-sm ${cardClasses} transition-all duration-300`}>
+            {/* Mobile-Optimized Header */}
+            <div className="p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <Filter className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-base sm:text-lg font-semibold truncate">
+                                Filters
+                            </h3>
+                            {hasActiveFilters && (
+                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {activeFilterCount} active filter{activeFilterCount !== 1 ? 's' : ''}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h3 className={`text-lg font-semibold ${textClasses}`}>
-                            Filters & Sorting
-                        </h3>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         {hasActiveFilters && (
-                            <p className={`text-sm ${subtextClasses}`}>
-                                {activeFilterCount} active filter{activeFilterCount !== 1 ? 's' : ''}
-                            </p>
+                            <button
+                                onClick={clearFilters}
+                                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all duration-200 ${buttonClasses}`}
+                                aria-label="Clear all filters"
+                            >
+                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">Clear</span>
+                            </button>
                         )}
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    {hasActiveFilters && (
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                clearFilters();
-                            }}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all hover:scale-105 ${buttonClasses}`}
+                            onClick={toggleExpanded}
+                            className={`p-2 sm:p-2.5 rounded-lg border transition-all duration-200 ${buttonClasses}`}
+                            aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
+                            aria-expanded={isExpanded}
                         >
-                            <X className="w-4 h-4" />
-                            Clear
+                            {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                                <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
                         </button>
-                    )}
-                    {isExpanded ? (
-                        <ChevronUp className={`w-5 h-5 ${textClasses}`} />
-                    ) : (
-                        <ChevronDown className={`w-5 h-5 ${textClasses}`} />
-                    )}
+                    </div>
                 </div>
             </div>
 
-            {/* Filter Options */}
-            {isExpanded && (
-                <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4 animate-slideDown">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Expanded Filters - Mobil Optimized */}
+            <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+            >
+                <div className="p-3 sm:p-4 pt-0 space-y-4 sm:space-y-5">
+                    {/* Filter Grid - Tek sütun mobilde */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         {/* Status Filter */}
                         <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white">
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                                 <Flag className="w-4 h-4" />
                                 Status
                             </label>
@@ -217,56 +220,48 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
                         </div>
                     </div>
 
-                    {/* Sorting Options */}
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex-1 space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Sort By
-                            </label>
-                            <select
-                                value={filters.sortBy}
-                                onChange={(e) => updateFilter('sortBy', e.target.value)}
-                                className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200 ${selectClasses}`}
-                            >
-                                {sortOptions.map(option => {
-                                    const Icon = option.icon;
-                                    return (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
+                    {/* Sorting Section */}
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                            {/* Sort By */}
+                            <div className="flex-1 space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Sort By
+                                </label>
+                                <select
+                                    value={filters.sortBy}
+                                    onChange={(e) => updateFilter('sortBy', e.target.value)}
+                                    className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200 ${selectClasses}`}
+                                >
+                                    {sortOptions.map(option => {
+                                        const Icon = option.icon;
+                                        return (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
 
-                        <div className="w-full sm:w-auto space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Order
-                            </label>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => updateFilter('sortOrder', 'asc')}
-                                    className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${filters.sortOrder === 'asc'
-                                        ? 'bg-blue-500 text-white border-blue-500'
-                                        : buttonClasses
-                                    }`}
+                            {/* Sort Order */}
+                            <div className="w-full sm:w-auto space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Order
+                                </label>
+                                <select
+                                    value={filters.sortOrder}
+                                    onChange={(e) => updateFilter('sortOrder', e.target.value)}
+                                    className={`w-full sm:w-32 px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200 ${selectClasses}`}
                                 >
-                                    ↑ Asc
-                                </button>
-                                <button
-                                    onClick={() => updateFilter('sortOrder', 'desc')}
-                                    className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${filters.sortOrder === 'desc'
-                                        ? 'bg-blue-500 text-white border-blue-500'
-                                        : buttonClasses
-                                    }`}
-                                >
-                                    ↓ Desc
-                                </button>
+                                    <option value="desc">↓ Newest</option>
+                                    <option value="asc">↑ Oldest</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

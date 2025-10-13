@@ -1,5 +1,15 @@
-// src/App.tsx - Complete Fixed Version
-import { useState, useCallback, useEffect } from 'react';
+// src/App.tsx - Complete Final Version (Fixed ESLint & TypeScript errors)
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import LoginPage from './components/Auth/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
+import { useTheme } from './hooks/useTheme';
+import { useTodosAPI } from './hooks/useTodosAPI';
+import { useDebounce } from './hooks/useDebounce';
+import { sounds } from './utils/sounds';
+import { logger } from './utils/logger';
+import type { Todo, TodoFormData } from './components/TodoForm';
+import type { FilterOptions } from './hooks/useTodosAPI';
 
 // Component imports
 import { Header } from './components/Header';
@@ -11,25 +21,15 @@ import { ErrorState } from './components/ErrorState';
 import { EmptyState } from './components/EmptyState';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { BulkActions } from './components/BulkActions';
-import { Dashboard } from './components/Dashboard';
-import { Settings } from './components/Settings';
 import { TodoListView } from './components/TodoListView';
-// Sound imports
-import { sounds } from './utils/sounds';
 
-// Auth imports
-import LoginPage from './components/Auth/LoginPage';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+// ✅ Code splitting for heavy components
+const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
+const Settings = lazy(() => import('./components/Settings').then(module => ({ default: module.Settings })));
 
-// Hook imports
-import { useTheme } from './hooks/useTheme';
-import { useTodosAPI } from './hooks/useTodosAPI';
-import { useDebounce } from './hooks/useDebounce';
-
-// Type imports
-import type { Todo, TodoFormData } from './components/TodoForm';
-
-// App Settings Type
+// ============================================
+// APP SETTINGS
+// ============================================
 interface AppSettings {
     defaultPriority: 'low' | 'medium' | 'high';
     autoMarkOverdue: boolean;
@@ -40,6 +40,17 @@ interface AppSettings {
     autoSave: boolean;
     theme: 'light' | 'dark' | 'system';
 }
+
+const DEFAULT_SETTINGS: AppSettings = {
+    defaultPriority: 'medium',
+    autoMarkOverdue: true,
+    notifications: true,
+    soundEffects: true,
+    compactView: false,
+    showCompletedTasks: true,
+    autoSave: true,
+    theme: 'system',
+};
 
 // ============================================
 // AUTH GUARD
@@ -55,88 +66,95 @@ const AuthGuard: React.FC = () => {
         );
     }
 
-    return isAuthenticated ? <MainApp /> : <LoginPage />;
+    return isAuthenticated ? <TodoApp /> : <LoginPage />;
 };
 
 // ============================================
-// MAIN APP
+// MAIN TODO APP
 // ============================================
-function MainApp() {
-    // ========== Auth & Theme ==========
-    const { user, logout } = useAuth();
+function TodoApp() {
+    // ============================================
+    // HOOKS & STATE
+    // ============================================
     const { theme, isDarkMode, setTheme } = useTheme();
+    const { logout } = useAuth();
 
-    // ========== App Settings ==========
-    const [appSettings, setAppSettings] = useState<AppSettings>({
-        defaultPriority: 'medium',
-        autoMarkOverdue: true,
-        notifications: true,
-        soundEffects: false,
-        compactView: false,
-        showCompletedTasks: true,
-        autoSave: true,
-        theme: 'system',
-    });
-
-    // ========== Todo State ==========
     const {
         todos,
         categories,
+        stats,
         filters,
         loading,
         error,
-        stats,
+        isRefreshing,
         createTodo: apiCreateTodo,
         updateTodo: apiUpdateTodo,
         deleteTodo: apiDeleteTodo,
         toggleTodo: apiToggleTodo,
         bulkDelete: apiBulkDelete,
-        reorderTodos: apiReorderTodos,
         setFilters,
+        searchTodos,
         refreshTodos,
+        clearError,
     } = useTodosAPI();
 
-    // ========== Notifications ==========
     const {
         notifications,
+        showSuccess,
+        showError,
+        showWarning,
         removeNotification,
         showCreate,
         showUpdate,
         showDelete,
-        showComplete,
-        showIncomplete,
-        showError,
-        showSuccess
     } = useNotifications();
 
-    // ========== UI State ==========
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedTodos, setSelectedTodos] = useState<Set<string>>(new Set());
-    const [viewMode, setViewMode] = useState<'list' | 'dashboard'>('list');
-
-    // ========== Modal State ==========
+    // UI State
+    const [currentView, setCurrentView] = useState<'list' | 'dashboard' | 'settings'>('list');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTodos, setSelectedTodos] = useState<Set<string>>(new Set());
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [deletingTodos, setDeletingTodos] = useState<string[]>([]);
 
-    // ========== Debounced Search ==========
-    const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    // App Settings
+    const [appSettings, setAppSettings] = useState<AppSettings>(() => {
+        const saved = localStorage.getItem('app-settings');
+        return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    });
 
-    // ========== Load Settings ==========
+    // Debounced search
+    const debouncedSearch = useDebounce(searchQuery, 300);
+
+    // Search with debounce
+    const displayedTodos = searchQuery ? searchTodos(debouncedSearch) : todos;
+
+    // ============================================
+    // EFFECTS
+    // ============================================
+
+    // Auto-save settings
     useEffect(() => {
-        const savedSettings = localStorage.getItem('app-settings');
-        if (savedSettings) {
-            try {
-                const parsed = JSON.parse(savedSettings);
-                setAppSettings(prev => ({ ...prev, ...parsed }));
-            } catch (error) {
-                console.error('Failed to parse settings:', error);
-            }
+        if (appSettings.autoSave) {
+            localStorage.setItem('app-settings', JSON.stringify(appSettings));
+            logger.debug('Settings auto-saved', appSettings);
         }
-    }, []);
+    }, [appSettings]);
+
+    // ❌ REMOVED: This was causing the loop
+    // Theme sync with settings - REMOVED because it creates a loop
+    // useTheme hook already handles theme persistence
+
+    // ✅ Apply dark mode class to document
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [isDarkMode]);
 
     // ============================================
     // HANDLERS
@@ -145,177 +163,154 @@ function MainApp() {
     const handleLogout = async () => {
         try {
             await logout();
+            logger.info('User logged out');
         } catch (error) {
-            console.error('Logout error:', error);
+            logger.error('Logout error:', error);
         }
     };
 
     const handleSettingsChange = useCallback((newSettings: AppSettings) => {
         setAppSettings(newSettings);
-        if (newSettings.theme !== appSettings.theme) {
+
+        // ✅ Only update theme if it actually changed
+        if (newSettings.theme !== theme) {
             setTheme(newSettings.theme);
         }
-        if (newSettings.autoSave) {
-            localStorage.setItem('app-settings', JSON.stringify(newSettings));
-        }
-    }, [appSettings.theme, setTheme]);
 
-    const handleImportTodos = useCallback(async (importedTodos: TodoFormData[]) => {
-        try {
-            for (const todoData of importedTodos) {
-                await apiCreateTodo(todoData);
-            }
-            if (appSettings.notifications) {
-                showSuccess(`Successfully imported ${importedTodos.length} todos!`, 3000);
-            }
-            await refreshTodos();
-        } catch (error) {
-            console.error('Failed to import todos:', error);
-            if (appSettings.notifications) {
-                showError('Failed to import some todos. Please try again.', 5000);
-            }
-        }
-    }, [apiCreateTodo, appSettings.notifications, showSuccess, showError, refreshTodos]);
+        logger.debug('Settings updated', newSettings);
+    }, [theme, setTheme]);
 
     const createTodo = async (formData: TodoFormData) => {
-        try {
-            const todoData = {
-                ...formData,
-                priority: formData.priority || appSettings.defaultPriority
-            };
-            await apiCreateTodo(todoData);
-            sounds.create();
-            if (appSettings.notifications) {
-                showCreate(`"${formData.title}" created successfully!`, 3000);
-            }
-            setIsAddModalOpen(false);
-        } catch (error) {
-            console.error('Failed to create todo:', error);
-            if (appSettings.notifications) {
-                showError('Failed to create todo. Please try again.', 5000);
-            }
+        const todoData = {
+            ...formData,
+            priority: formData.priority || (appSettings.defaultPriority.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH'),
+        };
+
+        await apiCreateTodo(todoData);
+
+        if (appSettings.soundEffects) sounds.create();
+        if (appSettings.notifications) {
+            showCreate(`"${formData.title}" created successfully!`, 3000);
         }
+
+        setIsAddModalOpen(false);
+        logger.info('Todo created:', formData.title);
     };
 
     const updateTodo = async (id: string, formData: TodoFormData) => {
-        try {
-            await apiUpdateTodo(id, formData);
-            if (appSettings.notifications) {
-                showUpdate(`"${formData.title}" updated successfully!`, 3000);
-            }
-            setIsEditModalOpen(false);
-            setEditingTodo(null);
-        } catch (error) {
-            console.error('Failed to update todo:', error);
-            if (appSettings.notifications) {
-                showError('Failed to update todo. Please try again.', 5000);
-            }
+        await apiUpdateTodo(id, formData);
+
+        if (appSettings.notifications) {
+            showUpdate(`"${formData.title}" updated successfully!`, 3000);
         }
+
+        setIsEditModalOpen(false);
+        setEditingTodo(null);
+        logger.info('Todo updated:', id);
     };
 
     const deleteTodo = async (id: string) => {
-        try {
-            const todo = todos.find(t => t.id === id);
-            await apiDeleteTodo(id);
-            sounds.delete();
-            if (appSettings.notifications && todo) {
-                showDelete(`"${todo.title}" deleted successfully!`, 3000);
-            }
-            setIsDeleteConfirmOpen(false);
-            setDeletingTodos([]);
-        } catch (error) {
-            console.error('Failed to delete todo:', error);
-            if (appSettings.notifications) {
-                showError('Failed to delete todo. Please try again.', 5000);
-            }
+        const todo = todos.find(t => t.id === id);
+
+        await apiDeleteTodo(id);
+
+        if (appSettings.soundEffects) sounds.delete();
+        if (appSettings.notifications && todo) {
+            showDelete(`"${todo.title}" deleted successfully!`, 3000);
         }
+
+        setIsDeleteConfirmOpen(false);
+        setDeletingTodos([]);
+        logger.info('Todo deleted:', id);
     };
 
     const toggleTodo = async (id: string) => {
-        try {
-            const todo = todos.find(t => t.id === id);
-            await apiToggleTodo(id);
+        const todo = todos.find(t => t.id === id);
+        if (!todo) return;
+
+        await apiToggleTodo(id);
+
+        if (appSettings.soundEffects) {
+            // ✅ Fixed: sounds doesn't have uncomplete, just use complete
             sounds.complete();
-            if (appSettings.notifications && todo) {
-                if (todo.completed) {
-                    showIncomplete(`"${todo.title}" marked as incomplete`, 2000);
-                } else {
-                    showComplete(`"${todo.title}" completed!`, 2000);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to toggle todo:', error);
-            if (appSettings.notifications) {
-                showError('Failed to update todo status.', 3000);
-            }
         }
+
+        logger.info('Todo toggled:', id);
     };
 
-    const handleBulkDelete = async () => {
-        try {
-            await apiBulkDelete(Array.from(selectedTodos));
-            if (appSettings.notifications) {
-                showDelete(`${selectedTodos.size} todos deleted successfully!`, 3000);
-            }
-            setSelectedTodos(new Set());
-            setIsDeleteConfirmOpen(false);
-            setDeletingTodos([]);
-        } catch (error) {
-            sounds.error();
-            console.error('Failed to bulk delete:', error);
-            if (appSettings.notifications) {
-                showError('Failed to delete todos. Please try again.', 5000);
-            }
-        }
-    };
-
-    const handleEdit = (todo: Todo) => {
+    const handleEdit = useCallback((todo: Todo) => {
         setEditingTodo(todo);
         setIsEditModalOpen(true);
-    };
+    }, []);
 
-    const handleDeleteSingle = (id: string) => {
+    const handleDelete = useCallback((id: string) => {
         setDeletingTodos([id]);
         setIsDeleteConfirmOpen(true);
+    }, []);
+
+    const handleBulkDelete = async () => {
+        await apiBulkDelete(deletingTodos);
+
+        if (appSettings.soundEffects) sounds.delete();
+        if (appSettings.notifications) {
+            showDelete(`${deletingTodos.length} todos deleted successfully!`, 3000);
+        }
+
+        setSelectedTodos(new Set());
+        setDeletingTodos([]);
+        setIsDeleteConfirmOpen(false);
+        logger.info('Bulk delete completed:', deletingTodos.length);
     };
 
-    // ========== Filtered Todos ==========
-    const filteredTodos = todos.filter(todo => {
-        // Search filter
-        if (debouncedSearchQuery) {
-            const query = debouncedSearchQuery.toLowerCase();
-            const matchesSearch =
-                todo.title.toLowerCase().includes(query) ||
-                (todo.description && todo.description.toLowerCase().includes(query)) ||
-                (todo.category && todo.category.toLowerCase().includes(query));
-            if (!matchesSearch) return false;
+    const handleBulkDeleteSelected = useCallback(() => {
+        if (selectedTodos.size === 0) return;
+        setDeletingTodos(Array.from(selectedTodos));
+        setIsDeleteConfirmOpen(true);
+    }, [selectedTodos]);
+
+    const handleImportTodos = useCallback(async (importedTodos: TodoFormData[]) => {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const todoData of importedTodos) {
+            try {
+                await apiCreateTodo(todoData);
+                successCount++;
+            } catch (error) {
+                errorCount++;
+                logger.error('Failed to import todo:', todoData.title, error);
+            }
         }
 
-        // Status filter
-        if (filters.status === 'active' && todo.completed) return false;
-        if (filters.status === 'completed' && !todo.completed) return false;
-
-        // Priority filter
-        if (filters.priority && filters.priority !== 'all' && todo.priority !== filters.priority.toUpperCase()) {
-            return false;
+        if (appSettings.notifications) {
+            if (errorCount === 0) {
+                showSuccess(`Successfully imported ${successCount} todos!`, 3000);
+            } else {
+                showWarning(
+                    `Imported ${successCount} todos, ${errorCount} failed.`,
+                    5000
+                );
+            }
         }
 
-        // Category filter
-        if (filters.category && filters.category !== 'all' && todo.category !== filters.category) {
-            return false;
-        }
+        await refreshTodos();
+        logger.info('Import completed:', { successCount, errorCount });
+    }, [apiCreateTodo, appSettings.notifications, showSuccess, showWarning, refreshTodos]);
 
-        return true;
-    });
+    const handleFiltersChange = useCallback((newFilters: FilterOptions) => {
+        setFilters(newFilters);
+        logger.debug('Filters changed:', newFilters);
+    }, [setFilters]);
 
     // ============================================
     // RENDER
     // ============================================
+
     return (
-        <div className={`min-h-screen transition-colors duration-200 ${
-            isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+        <div className={`min-h-screen transition-colors duration-300 ${
+            isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50'
         }`}>
-            {/* Modern Header */}
+            {/* Header */}
             <Header
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -323,34 +318,98 @@ function MainApp() {
                 isDarkMode={isDarkMode}
                 onThemeChange={setTheme}
                 onAddTodo={() => setIsAddModalOpen(true)}
-                userName={user?.name}
                 onLogout={handleLogout}
-                onDashboardClick={() => setViewMode(viewMode === 'dashboard' ? 'list' : 'dashboard')}
-                onSettingsClick={() => setIsSettingsOpen(true)}
-                showDashboard={viewMode === 'dashboard'}
             />
 
+            {/* View Switcher */}
+            <div className="container mx-auto px-4 pt-4 max-w-7xl">
+                <div className="flex gap-2 mb-4">
+                    <button
+                        onClick={() => setCurrentView('list')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            currentView === 'list'
+                                ? 'bg-blue-500 text-white'
+                                : isDarkMode
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        📋 List
+                    </button>
+                    <button
+                        onClick={() => setCurrentView('dashboard')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            currentView === 'dashboard'
+                                ? 'bg-blue-500 text-white'
+                                : isDarkMode
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        📊 Dashboard
+                    </button>
+                    <button
+                        onClick={() => setCurrentView('settings')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            currentView === 'settings'
+                                ? 'bg-blue-500 text-white'
+                                : isDarkMode
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        ⚙️ Settings
+                    </button>
+                </div>
+            </div>
+
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {/* Dashboard View */}
-                {viewMode === 'dashboard' && (
-                    <Dashboard
-                        stats={stats}
-                        todos={todos}
-                        darkMode={isDarkMode}
+            <main className="container mx-auto px-4 pb-8 max-w-7xl">
+                {/* Error Display */}
+                {error && (
+                    <ErrorState
+                        message={error}
+                        onRetry={refreshTodos}
                     />
                 )}
 
-                {/* List View */}
-                {viewMode === 'list' && (
+                {/* View Router */}
+                {currentView === 'list' && (
                     <>
-                        {/* Filters */}
-                        <TodoFilters
-                            filters={filters}
-                            onFiltersChange={setFilters}
-                            categories={categories}
-                            darkMode={isDarkMode}
-                        />
+                        {/* Filters & Search */}
+                        <div className="mb-6 space-y-4">
+                            <TodoFilters
+                                filters={filters}
+                                onFiltersChange={handleFiltersChange}
+                                categories={categories}
+                                darkMode={isDarkMode}
+                            />
+
+                            {/* Search Bar */}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search todos..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className={`w-full px-4 py-3 pl-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                                        isDarkMode
+                                            ? 'bg-gray-800 border-gray-700 text-white'
+                                            : 'bg-white border-gray-200'
+                                    }`}
+                                />
+                                <span className="absolute left-3 top-3.5 text-gray-400">🔍</span>
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                        aria-label="Clear search"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Bulk Actions */}
                         {selectedTodos.size > 0 && (
@@ -370,56 +429,84 @@ function MainApp() {
                                     }
                                     setSelectedTodos(new Set());
                                 }}
-                                onDelete={handleBulkDelete}
+                                onDelete={handleBulkDeleteSelected}
                                 onClear={() => setSelectedTodos(new Set())}
-                                loading={false}
+                                loading={loading}
                             />
                         )}
 
-                        {/* Content */}
-                        {error ? (
-                            <ErrorState
-                                message={error}
-                                onRetry={refreshTodos}
-                            />
-                        ) : loading ? (
-                            <LoadingState />
-                        ) : filteredTodos.length === 0 ? (
-                            <EmptyState
-                                type={debouncedSearchQuery ? 'no-search-results' : 'no-todos'}
-                                searchQuery={debouncedSearchQuery}
-                                onCreateTodo={() => setIsAddModalOpen(true)}
-                            />
+                        {/* Todo List */}
+                        {loading && displayedTodos.length === 0 ? (
+                            <LoadingState message="Loading your todos..." />
+                        ) : displayedTodos.length === 0 ? (
+                            <EmptyState type={searchQuery ? 'no-search-results' : 'no-todos'} />
                         ) : (
                             <TodoListView
-                                todos={filteredTodos}
-                                selectedTodos={selectedTodos}
+                                todos={displayedTodos}
                                 onToggle={toggleTodo}
                                 onEdit={handleEdit}
-                                onDelete={handleDeleteSingle}
-                                onReorder={apiReorderTodos}
+                                onDelete={handleDelete}
+                                onReorder={() => {}} // ✅ Empty function - drag and drop disabled
+                                selectedTodos={selectedTodos}
                                 onSelect={(id: string, selected: boolean) => {
-                                    const newSelected = new Set(selectedTodos);
-                                    if (selected) {
-                                        newSelected.add(id);
-                                    } else {
-                                        newSelected.delete(id);
-                                    }
-                                    setSelectedTodos(newSelected);
+                                    setSelectedTodos(prev => {
+                                        const newSet = new Set(prev);
+                                        if (selected) {
+                                            newSet.add(id);
+                                        } else {
+                                            newSet.delete(id);
+                                        }
+                                        return newSet;
+                                    });
                                 }}
                                 isDarkMode={isDarkMode}
                             />
                         )}
                     </>
                 )}
+
+                {/* Dashboard */}
+                {currentView === 'dashboard' && (
+                    <Suspense fallback={<LoadingState message="Loading dashboard..." />}>
+                        <Dashboard
+                            todos={todos}
+                            stats={stats}
+                            darkMode={isDarkMode}
+                        />
+                    </Suspense>
+                )}
+
+                {/* Settings */}
+                {currentView === 'settings' && (
+                    <Suspense fallback={<LoadingState message="Loading settings..." />}>
+                        <Settings
+                            isOpen={true}
+                            onClose={() => setCurrentView('list')}
+                            darkMode={isDarkMode}
+                            onImportTodos={handleImportTodos}
+                            onSettingsChange={handleSettingsChange}
+                            onThemeChange={setTheme}
+                            currentTheme={theme}
+                        />
+                    </Suspense>
+                )}
             </main>
+
+            {/* Floating Action Button */}
+            <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center z-40"
+                aria-label="Add new todo"
+            >
+                <span className="text-3xl">+</span>
+            </button>
 
             {/* Modals */}
             {isAddModalOpen && (
                 <TodoForm
                     isOpen={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}
-                    onSubmit={(data) => createTodo(data)}
+                    onSubmit={createTodo}
                     mode="add"
                     darkMode={isDarkMode}
                 />
@@ -439,18 +526,7 @@ function MainApp() {
                 />
             )}
 
-            {isSettingsOpen && (
-                <Settings
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
-                    darkMode={isDarkMode}
-                    onThemeChange={setTheme}
-                    currentTheme={theme}
-                    onImportTodos={handleImportTodos}
-                    onSettingsChange={handleSettingsChange}
-                />
-            )}
-
+            {/* Delete Confirmation */}
             {isDeleteConfirmOpen && (
                 <ConfirmDialog
                     isOpen={isDeleteConfirmOpen}
@@ -480,18 +556,29 @@ function MainApp() {
                 notifications={notifications}
                 onRemove={removeNotification}
             />
+
+            {/* Loading Overlay for Refresh */}
+            {isRefreshing && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl">
+                        <LoadingState message="Refreshing..." />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 // ============================================
-// ROOT APP WITH AUTH PROVIDER
+// ROOT APP WITH PROVIDERS
 // ============================================
 function App() {
     return (
-        <AuthProvider>
-            <AuthGuard />
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <AuthGuard />
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 
