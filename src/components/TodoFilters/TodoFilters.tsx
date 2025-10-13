@@ -1,16 +1,7 @@
 // src/components/TodoFilters/TodoFilters.tsx
 import { useState } from 'react';
-import { Filter, ChevronUp, ChevronDown, X, SortAsc, SortDesc, Calendar, Tag, Flag } from 'lucide-react';
-import { Button } from '../ui/Button';
-
-export interface FilterOptions {
-    status: 'all' | 'active' | 'completed';
-    priority: 'all' | 'LOW' | 'MEDIUM' | 'HIGH';
-    category: string;
-    dateFilter: 'all' | 'today' | 'tomorrow' | 'this-week' | 'overdue' | 'no-date';
-    sortBy: 'created' | 'updated' | 'title' | 'priority' | 'dueDate';
-    sortOrder: 'asc' | 'desc';
-}
+import { Filter, X, ChevronDown, ChevronUp, Calendar, Flag, Tag } from 'lucide-react';
+import type { FilterOptions } from '../../hooks/useTodosAPI';
 
 interface TodoFiltersProps {
     filters: FilterOptions;
@@ -25,11 +16,12 @@ const statusOptions = [
     { value: 'completed', label: 'Completed', icon: '✅' },
 ];
 
+// ✅ FIXED: Changed to uppercase to match backend enum values
 const priorityOptions = [
     { value: 'all', label: 'All Priorities', icon: '🏷️' },
-    { value: 'high', label: 'High', icon: '🔴', color: 'text-red-600 dark:text-red-400' },
-    { value: 'medium', label: 'Medium', icon: '🟡', color: 'text-yellow-600 dark:text-yellow-400' },
-    { value: 'low', label: 'Low', icon: '🟢', color: 'text-green-600 dark:text-green-400' },
+    { value: 'HIGH', label: 'High', icon: '🔴', color: 'text-red-600 dark:text-red-400' },
+    { value: 'MEDIUM', label: 'Medium', icon: '🟡', color: 'text-yellow-600 dark:text-yellow-400' },
+    { value: 'LOW', label: 'Low', icon: '🟢', color: 'text-green-600 dark:text-green-400' },
 ];
 
 const sortOptions = [
@@ -88,92 +80,69 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
         ? 'bg-gray-800/50 border-gray-700 backdrop-blur-sm'
         : 'bg-white/50 border-gray-200 backdrop-blur-sm';
 
+    // ✅ FIXED: Added proper text color classes for dark mode visibility
     const selectClasses = darkMode
-        ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500 focus:border-blue-400 focus:bg-gray-600'
-        : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 focus:border-blue-500';
+        ? 'bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600'
+        : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50';
+
+    const buttonClasses = darkMode
+        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
+        : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300';
+
+    const textClasses = darkMode ? 'text-gray-200' : 'text-gray-900';
+    const subtextClasses = darkMode ? 'text-gray-400' : 'text-gray-600';
 
     return (
-        <div className={`rounded-xl border shadow-sm transition-all duration-300 ${cardClasses}`}>
-            {/* Header - Always Visible */}
-            <div className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                    {/* Toggle Button */}
-                    <button
-                        onClick={toggleExpanded}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-gray-100  flex-1 sm:flex-none ${
-                            isExpanded ? 'bg-gray-50 dark:bg-gray-700' : ''
-                        }`}
-                    >
-                        <Filter className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-semibold text-sm sm:text-base">Filters & Sorting</span>
-                        {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 transition-transform duration-200" />
-                        ) : (
-                            <ChevronDown className="w-4 h-4 transition-transform duration-200" />
-                        )}
-                    </button>
-
-                    {/* Active Filters Badge & Clear Button */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
+        <div className={`border rounded-xl shadow-sm overflow-hidden transition-all duration-300 ${cardClasses}`}>
+            {/* Header */}
+            <div
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors"
+                onClick={toggleExpanded}
+            >
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                        <Filter className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h3 className={`text-lg font-semibold ${textClasses}`}>
+                            Filters & Sorting
+                        </h3>
                         {hasActiveFilters && (
-                            <>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 animate-fade-in">
-                                    {activeFilterCount}
-                                </span>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearFilters}
-                                    className="transition-all duration-200 hover:scale-105 p-2"
-                                    aria-label="Clear all filters"
-                                >
-                                    <X className="w-4 h-4" />
-                                </Button>
-                            </>
+                            <p className={`text-sm ${subtextClasses}`}>
+                                {activeFilterCount} active filter{activeFilterCount !== 1 ? 's' : ''}
+                            </p>
                         )}
                     </div>
                 </div>
-
-                {/* Quick Filter Pills (Mobile) */}
-                {!isExpanded && hasActiveFilters && (
-                    <div className="mt-3 flex flex-wrap gap-2 animate-fade-in">
-                        {filters.status !== 'all' && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
-                                Status: {statusOptions.find(o => o.value === filters.status)?.label}
-                            </span>
-                        )}
-                        {filters.priority !== 'all' && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-                                Priority: {priorityOptions.find(o => o.value === filters.priority)?.label}
-                            </span>
-                        )}
-                        {filters.category !== 'all' && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                                Category: {filters.category}
-                            </span>
-                        )}
-                        {filters.dateFilter !== 'all' && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                                Date: {dateFilterOptions.find(o => o.value === filters.dateFilter)?.label}
-                            </span>
-                        )}
-                    </div>
-                )}
+                <div className="flex items-center gap-2">
+                    {hasActiveFilters && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                clearFilters();
+                            }}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all hover:scale-105 ${buttonClasses}`}
+                        >
+                            <X className="w-4 h-4" />
+                            Clear
+                        </button>
+                    )}
+                    {isExpanded ? (
+                        <ChevronUp className={`w-5 h-5 ${textClasses}`} />
+                    ) : (
+                        <ChevronDown className={`w-5 h-5 ${textClasses}`} />
+                    )}
+                </div>
             </div>
 
-            {/* Expandable Content */}
-            <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-            >
-                <div className="px-4 pb-4 space-y-4">
-                    {/* Filters Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filter Options */}
+            {isExpanded && (
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4 animate-slideDown">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Status Filter */}
                         <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                <span className="text-lg">📋</span>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white">
+                                <Flag className="w-4 h-4" />
                                 Status
                             </label>
                             <select
@@ -219,7 +188,7 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
                                 onChange={(e) => updateFilter('category', e.target.value)}
                                 className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200 ${selectClasses}`}
                             >
-                                <option value="all">All Categories</option>
+                                <option value="all">📁 All Categories</option>
                                 {categories.map(category => (
                                     <option key={category} value={category}>
                                         {category}
@@ -248,14 +217,10 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
                         </div>
                     </div>
 
-                    {/* Divider */}
-                    <div className="border-t border-gray-200 dark:border-gray-700" />
-
-                    {/* Sorting Section */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {/* Sort By */}
-                        <div className="space-y-2 sm:col-span-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {/* Sorting Options */}
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex-1 space-y-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Sort By
                             </label>
                             <select
@@ -263,95 +228,45 @@ export function TodoFilters({ filters, onFiltersChange, categories = [], darkMod
                                 onChange={(e) => updateFilter('sortBy', e.target.value)}
                                 className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200 ${selectClasses}`}
                             >
-                                {sortOptions.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
+                                {sortOptions.map(option => {
+                                    const Icon = option.icon;
+                                    return (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
-                        {/* Sort Order */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <div className="w-full sm:w-auto space-y-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Order
                             </label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                    variant={filters.sortOrder === 'asc' ? 'primary' : 'outline'}
-                                    size="sm"
+                            <div className="flex gap-2">
+                                <button
                                     onClick={() => updateFilter('sortOrder', 'asc')}
-                                    className="transition-all duration-200 hover:scale-105 justify-center"
-                                    icon={<SortAsc className="w-4 h-4" />}
+                                    className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${filters.sortOrder === 'asc'
+                                        ? 'bg-blue-500 text-white border-blue-500'
+                                        : buttonClasses
+                                    }`}
                                 >
-                                    <span className="hidden sm:inline">Asc</span>
-                                </Button>
-                                <Button
-                                    variant={filters.sortOrder === 'desc' ? 'primary' : 'outline'}
-                                    size="sm"
+                                    ↑ Asc
+                                </button>
+                                <button
                                     onClick={() => updateFilter('sortOrder', 'desc')}
-                                    className="transition-all duration-200 hover:scale-105 justify-center"
-                                    icon={<SortDesc className="w-4 h-4" />}
+                                    className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${filters.sortOrder === 'desc'
+                                        ? 'bg-blue-500 text-white border-blue-500'
+                                        : buttonClasses
+                                    }`}
                                 >
-                                    <span className="hidden sm:inline">Desc</span>
-                                </Button>
+                                    ↓ Desc
+                                </button>
                             </div>
                         </div>
                     </div>
-
-                    {/* Active Filters Summary */}
-                    {hasActiveFilters && (
-                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                        <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                                        Active Filters ({activeFilterCount})
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {filters.status !== 'all' && (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
-                                                Status: {statusOptions.find(o => o.value === filters.status)?.label}
-                                            </span>
-                                        )}
-                                        {filters.priority !== 'all' && (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 dark:bg-orange-400" />
-                                                Priority: {priorityOptions.find(o => o.value === filters.priority)?.label}
-                                            </span>
-                                        )}
-                                        {filters.category !== 'all' && (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400" />
-                                                Category: {filters.category}
-                                            </span>
-                                        )}
-                                        {filters.dateFilter !== 'all' && (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                                                Date: {dateFilterOptions.find(o => o.value === filters.dateFilter)?.label}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearFilters}
-                                    className="flex-shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                >
-                                    Clear All
-                                </Button>
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 }

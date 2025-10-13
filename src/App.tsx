@@ -14,6 +14,8 @@ import { BulkActions } from './components/BulkActions';
 import { Dashboard } from './components/Dashboard';
 import { Settings } from './components/Settings';
 import { TodoListView } from './components/TodoListView';
+// Sound imports
+import { sounds } from './utils/sounds';
 
 // Auth imports
 import LoginPage from './components/Auth/LoginPage';
@@ -180,6 +182,7 @@ function MainApp() {
                 priority: formData.priority || appSettings.defaultPriority
             };
             await apiCreateTodo(todoData);
+            sounds.create();
             if (appSettings.notifications) {
                 showCreate(`"${formData.title}" created successfully!`, 3000);
             }
@@ -212,6 +215,7 @@ function MainApp() {
         try {
             const todo = todos.find(t => t.id === id);
             await apiDeleteTodo(id);
+            sounds.delete();
             if (appSettings.notifications && todo) {
                 showDelete(`"${todo.title}" deleted successfully!`, 3000);
             }
@@ -229,6 +233,7 @@ function MainApp() {
         try {
             const todo = todos.find(t => t.id === id);
             await apiToggleTodo(id);
+            sounds.complete();
             if (appSettings.notifications && todo) {
                 if (todo.completed) {
                     showIncomplete(`"${todo.title}" marked as incomplete`, 2000);
@@ -254,6 +259,7 @@ function MainApp() {
             setIsDeleteConfirmOpen(false);
             setDeletingTodos([]);
         } catch (error) {
+            sounds.error();
             console.error('Failed to bulk delete:', error);
             if (appSettings.notifications) {
                 showError('Failed to delete todos. Please try again.', 5000);

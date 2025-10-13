@@ -1,6 +1,4 @@
 // src/components/Settings/Settings.tsx
-// Bu dosyayı TAMAMEN değiştir
-
 import React, { useState, useEffect } from 'react';
 import {
     Save,
@@ -119,6 +117,7 @@ export function Settings({
 
     /**
      * Save settings to localStorage
+     * ✅ FIXED: Now auto-closes modal after saving
      */
     const handleSaveSettings = () => {
         try {
@@ -126,10 +125,17 @@ export function Settings({
             setHasChanges(false);
             onSettingsChange?.(settings);
             setImportStatus('✅ Settings saved successfully!');
-            setTimeout(() => setImportStatus(''), 3000);
+
+            // ✅ FIXED: Auto-close modal after showing success message
+            setTimeout(() => {
+                setImportStatus('');
+                onClose(); // Close the modal
+            }, 1000); // Wait 1 second so user can see success message
+
         } catch (error) {
             console.error('Error saving settings:', error);
             setImportStatus('❌ Failed to save settings');
+            // Modal stays open on error
         }
     };
 
@@ -228,9 +234,9 @@ export function Settings({
      */
     const getThemeIcon = (theme: string) => {
         switch (theme) {
-            case 'light': return <Sun className="w-4 h-4" />;
-            case 'dark': return <Moon className="w-4 h-4" />;
-            default: return <Monitor className="w-4 h-4" />;
+            case 'light': return <Sun className="w-5 h-5 text-yellow-500" />;
+            case 'dark': return <Moon className="w-5 h-5 text-blue-400" />;
+            default: return <Monitor className="w-5 h-5 text-gray-400" />;
         }
     };
 
@@ -246,9 +252,7 @@ export function Settings({
 
             {/* Modal */}
             <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-scale-in border ${
-                darkMode
-                    ? 'bg-gray-900 border-gray-800'
-                    : 'bg-white border-gray-200'
+                darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
             }`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${
@@ -265,9 +269,7 @@ export function Settings({
                     <button
                         onClick={onClose}
                         className={`p-2 rounded-lg transition-colors ${
-                            darkMode
-                                ? 'hover:bg-gray-800 text-gray-400'
-                                : 'hover:bg-gray-100 text-gray-500'
+                            darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
                         }`}
                         aria-label="Close"
                     >
@@ -292,15 +294,11 @@ export function Settings({
 
                     {/* Theme Switcher Section */}
                     <div className={`p-4 sm:p-6 rounded-xl border ${
-                        darkMode
-                            ? 'bg-gray-800/50 border-gray-700'
-                            : 'bg-gray-50 border-gray-200'
+                        darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode
-                                    ? 'bg-purple-900/30'
-                                    : 'bg-gradient-to-br from-purple-100 to-purple-200'
+                                darkMode ? 'bg-purple-900/30' : 'bg-gradient-to-br from-purple-100 to-purple-200'
                             }`}>
                                 {getThemeIcon(currentTheme)}
                             </div>
@@ -329,16 +327,12 @@ export function Settings({
                                     <Icon className={`w-5 h-5 ${
                                         currentTheme === value
                                             ? 'text-blue-600 dark:text-blue-400'
-                                            : darkMode
-                                                ? 'text-gray-400'
-                                                : 'text-gray-600'
+                                            : darkMode ? 'text-gray-400' : 'text-gray-600'
                                     }`} />
                                     <span className={`text-sm font-medium ${
                                         currentTheme === value
                                             ? 'text-blue-600 dark:text-blue-400'
-                                            : darkMode
-                                                ? 'text-gray-300'
-                                                : 'text-gray-700'
+                                            : darkMode ? 'text-gray-300' : 'text-gray-700'
                                     }`}>{label}</span>
                                 </button>
                             ))}
@@ -347,15 +341,11 @@ export function Settings({
 
                     {/* General Settings */}
                     <div className={`p-4 sm:p-6 rounded-xl border ${
-                        darkMode
-                            ? 'bg-gray-800/50 border-gray-700'
-                            : 'bg-gray-50 border-gray-200'
+                        darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode
-                                    ? 'bg-blue-900/30'
-                                    : 'bg-gradient-to-br from-blue-100 to-blue-200'
+                                darkMode ? 'bg-blue-900/30' : 'bg-gradient-to-br from-blue-100 to-blue-200'
                             }`}>
                                 <SettingsIcon className={`w-5 h-5 ${
                                     darkMode ? 'text-blue-400' : 'text-blue-600'
@@ -437,15 +427,11 @@ export function Settings({
 
                     {/* Data Management */}
                     <div className={`p-4 sm:p-6 rounded-xl border ${
-                        darkMode
-                            ? 'bg-gray-800/50 border-gray-700'
-                            : 'bg-gray-50 border-gray-200'
+                        darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode
-                                    ? 'bg-green-900/30'
-                                    : 'bg-gradient-to-br from-green-100 to-green-200'
+                                darkMode ? 'bg-green-900/30' : 'bg-gradient-to-br from-green-100 to-green-200'
                             }`}>
                                 <Download className={`w-5 h-5 ${
                                     darkMode ? 'text-green-400' : 'text-green-600'
@@ -456,68 +442,63 @@ export function Settings({
                             }`}>Data Management</h3>
                         </div>
 
-                        <div className="space-y-4">
-                            {/* Export/Import Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={handleExportData}
+                                disabled={exporting}
+                                icon={<Download className="w-4 h-4" />}
+                                className="justify-center"
+                            >
+                                {exporting ? 'Exporting...' : 'Export Data'}
+                            </Button>
+
+                            <label className="relative">
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    onChange={handleImportData}
+                                    disabled={importing}
+                                    className="hidden"
+                                />
+                                <div className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors ${
+                                    importing
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : darkMode
+                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}>
+                                    <Upload className="w-4 h-4" />
+                                    <span className="text-sm font-medium">{importing ? 'Importing...' : 'Import Data'}</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Danger Zone */}
+                        <div className={`pt-4 mt-4 border-t ${
+                            darkMode ? 'border-gray-600' : 'border-gray-300'
+                        }`}>
+                            <label className="flex items-center gap-2 text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
+                                <AlertTriangle className="w-4 h-4" />
+                                Danger Zone
+                            </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <Button
                                     variant="outline"
-                                    onClick={handleExportData}
-                                    disabled={exporting}
-                                    icon={<Download className="w-4 h-4" />}
-                                    className="justify-center"
+                                    onClick={handleResetSettings}
+                                    icon={<SettingsIcon className="w-4 h-4" />}
+                                    className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
                                 >
-                                    {exporting ? 'Exporting...' : 'Export Data'}
+                                    Reset Settings
                                 </Button>
-
-                                <label className="w-full cursor-pointer">
-                                    <input
-                                        type="file"
-                                        accept=".json"
-                                        onChange={handleImportData}
-                                        disabled={importing}
-                                        className="hidden"
-                                    />
-                                    <div className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 font-medium text-sm ${
-                                        importing
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : 'cursor-pointer'
-                                    } ${
-                                        darkMode
-                                            ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600'
-                                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}>
-                                        <Upload className="w-4 h-4" />
-                                        <span>{importing ? 'Importing...' : 'Import Data'}</span>
-                                    </div>
-                                </label>
-                            </div>
-
-                            {/* Danger Zone */}
-                            <div className={`pt-4 border-t ${
-                                darkMode ? 'border-gray-600' : 'border-gray-300'
-                            }`}>
-                                <label className="flex items-center gap-2 text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
-                                    <AlertTriangle className="w-4 h-4" />
-                                    Danger Zone
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleResetSettings}
-                                        icon={<SettingsIcon className="w-4 h-4" />}
-                                        className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
-                                    >
-                                        Reset Settings
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleClearData}
-                                        icon={<Trash2 className="w-4 h-4" />}
-                                        className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                                    >
-                                        Clear All Data
-                                    </Button>
-                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleClearData}
+                                    icon={<Trash2 className="w-4 h-4" />}
+                                    className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                >
+                                    Clear All Data
+                                </Button>
                             </div>
                         </div>
                     </div>

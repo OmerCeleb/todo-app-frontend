@@ -67,44 +67,53 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
     /**
      * Calculate completion rate percentage
      */
-    const completionRate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+    const completionRate = stats.total > 0
+        ? (stats.completed / stats.total) * 100
+        : 0;
 
     /**
-     * Calculate productivity score based on last 7 days
+     * Calculate weekly productivity score
      */
     const productivityScore = useMemo(() => {
-        const recentTodos = todos.filter(todo => {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const weeklyCompleted = todos.filter(todo => {
+            const updatedDate = new Date(todo.updatedAt);
+            return todo.completed && updatedDate >= weekAgo;
+        }).length;
+
+        const weeklyCreated = todos.filter(todo => {
             const createdDate = new Date(todo.createdAt);
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
             return createdDate >= weekAgo;
-        });
+        }).length;
 
-        const recentCompleted = recentTodos.filter(todo => todo.completed).length;
-        const recentTotal = recentTodos.length;
-
-        if (recentTotal === 0) return 0;
-        return Math.round((recentCompleted / recentTotal) * 100);
+        return weeklyCreated > 0
+            ? Math.round((weeklyCompleted / weeklyCreated) * 100)
+            : 0;
     }, [todos]);
 
     /**
-     * Calculate streak (consecutive days with completed tasks)
+     * Calculate current streak
      */
     const currentStreak = useMemo(() => {
+        if (todos.length === 0) return 0;
+
         let streak = 0;
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         for (let i = 0; i < 30; i++) {
             const checkDate = new Date(today);
-            checkDate.setDate(today.getDate() - i);
+            checkDate.setDate(checkDate.getDate() - i);
 
-            const hasCompletedTodo = todos.some(todo => {
-                if (!todo.completed) return false;
-                const completedDate = new Date(todo.updatedAt);
-                return completedDate.toDateString() === checkDate.toDateString();
+            const hasCompletedTask = todos.some(todo => {
+                const updatedDate = new Date(todo.updatedAt);
+                updatedDate.setHours(0, 0, 0, 0);
+                return todo.completed && updatedDate.getTime() === checkDate.getTime();
             });
 
-            if (hasCompletedTodo) {
+            if (hasCompletedTask) {
                 streak++;
             } else if (i > 0) {
                 break;
@@ -115,11 +124,11 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
     }, [todos]);
 
     /**
-     * Generate weekly activity data for the chart
+     * Generate weekly activity data
      */
     const weeklyData = useMemo((): ChartData[] => {
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const data: ChartData[] = [];
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
         for (let i = 6; i >= 0; i--) {
             const date = new Date();
@@ -253,8 +262,8 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                                     title={`${item.name}: ${item.completed} completed, ${item.created} created`}
                                 />
                             </div>
-                            {/* Day label */}
-                            <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors truncate w-full text-center">
+                            {/* Day label - FIXED: Added better text colors for dark mode */}
+                            <span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors truncate w-full text-center">
                                 {item.name}
                             </span>
                             {/* Optional: Show count on hover */}
@@ -328,21 +337,13 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                         </div>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {stats.overdue > 0 ? (
-                            <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                <AlertCircle className="w-3 h-3" />
-                                {stats.overdue} overdue
-                            </span>
-                        ) : (
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                <CheckCircle className="w-3 h-3" />
-                                All on track
-                            </span>
-                        )}
+                        {stats.overdue > 0
+                            ? `${stats.overdue} overdue task${stats.overdue > 1 ? 's' : ''}`
+                            : 'All tasks on track'}
                     </p>
                 </div>
 
-                {/* Streak Card */}
+                {/* Current Streak Card */}
                 <div className={`p-6 rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${cardClasses}`}>
                     <div className="flex items-center justify-between mb-4">
                         <div>
@@ -355,8 +356,7 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                             <Flame className="w-7 h-7 text-purple-600 dark:text-purple-400" />
                         </div>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                         {currentStreak > 0 ? 'Keep it going!' : 'Start your streak today!'}
                     </p>
                 </div>
@@ -364,14 +364,14 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Weekly Activity Chart */}
+                {/* Weekly Activity Chart - FIXED TEXT COLORS */}
                 <div className={`p-4 sm:p-6 rounded-xl border ${cardClasses}`}>
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <h3 className="text-base sm:text-lg font-bold">Weekly Activity</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Weekly Activity</h3>
                         </div>
                         <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0" />
                     </div>
@@ -381,32 +381,26 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                     <div className="flex items-center justify-center gap-4 sm:gap-6 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-br from-blue-600 to-green-400 rounded flex-shrink-0"></div>
-                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Activity</span>
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Activity</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Priority Distribution */}
+                {/* Priority Distribution - FIXED TEXT COLORS */}
                 <div className={`p-4 sm:p-6 rounded-xl border ${cardClasses}`}>
                     <div className="flex items-center gap-2 mb-4 sm:mb-6">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
                             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
                         </div>
-                        <h3 className="text-base sm:text-lg font-bold">Priority Breakdown</h3>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Priority Distribution</h3>
                     </div>
 
                     <div className="space-y-3 sm:space-y-4">
                         {priorityData.map((priority, index) => (
-                            <div key={index} className="group">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <div
-                                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
-                                            style={{ backgroundColor: priority.color }}
-                                        />
-                                        <span className="text-xs sm:text-sm font-semibold truncate">{priority.name}</span>
-                                    </div>
-                                    <span className="text-xs sm:text-sm font-bold ml-2 flex-shrink-0" style={{ color: priority.color }}>
+                            <div key={index} className="space-y-1.5 sm:space-y-2">
+                                <div className="flex items-center justify-between text-xs sm:text-sm">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{priority.name} Priority</span>
+                                    <span className="font-bold" style={{ color: priority.color }}>
                                         {priority.value} ({priority.percentage}%)
                                     </span>
                                 </div>
@@ -415,7 +409,7 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                         ))}
                         {priorityData.length === 0 && (
                             <div className="text-center py-8 sm:py-12">
-                                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-green-500 mx-auto mb-3" />
+                                <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3" />
                                 <p className="text-sm text-gray-500 dark:text-gray-400">No active tasks</p>
                             </div>
                         )}
@@ -423,26 +417,29 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
                 </div>
             </div>
 
-            {/* Category Distribution */}
+            {/* Category Distribution - FIXED TEXT COLORS */}
             <div className={`p-4 sm:p-6 rounded-xl border ${cardClasses}`}>
                 <div className="flex items-center gap-2 mb-4 sm:mb-6">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold">Tasks by Category</h3>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Tasks by Category</h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {categoryData.map((category, index) => (
                         <div key={index} className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:shadow-md transition-all">
                             <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
-                                <span className="font-semibold truncate text-sm sm:text-base">{category.name}</span>
-                                <span className="text-xs sm:text-sm font-bold px-2 py-1 rounded-full bg-white dark:bg-gray-800 flex-shrink-0" style={{ color: category.color }}>
+                                <span className="font-semibold truncate text-sm sm:text-base text-gray-900 dark:text-gray-100">
+                                    {category.name}
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold px-2 py-1 rounded-full bg-white dark:bg-gray-800"
+                                      style={{ color: category.color }}>
                                     {category.value}
                                 </span>
                             </div>
                             <ProgressBar percentage={category.percentage} color={category.color} />
-                            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">
+                            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mt-1.5 sm:mt-2">
                                 {category.percentage}% of total
                             </p>
                         </div>
@@ -458,7 +455,7 @@ export function Dashboard({ stats, todos = [], darkMode = false }: DashboardProp
 
             {/* Quick Stats Summary */}
             <div className={`p-4 sm:p-6 rounded-xl border ${cardClasses}`}>
-                <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
                     <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                     Quick Stats
                 </h3>
