@@ -280,7 +280,7 @@ const LoginPage: React.FC = () => {
                                         value={loginData.email}
                                         onChange={(e) => handleInputChange(e, 'login')}
                                         onKeyPress={handleKeyPress}
-                                        className={`input-field pl-10 ${
+                                        className={`block w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                                             validationErrors.email ? 'border-red-500 focus:ring-red-500' : ''
                                         }`}
                                         placeholder="you@example.com"
@@ -311,7 +311,7 @@ const LoginPage: React.FC = () => {
                                         value={loginData.password}
                                         onChange={(e) => handleInputChange(e, 'login')}
                                         onKeyPress={handleKeyPress}
-                                        className={`input-field pl-10 pr-10 ${
+                                        className={`block w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                                             validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''
                                         }`}
                                         placeholder="••••••••"
