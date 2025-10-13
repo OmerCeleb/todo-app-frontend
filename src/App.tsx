@@ -152,11 +152,13 @@ function MainApp() {
 
     const handleSettingsChange = useCallback((newSettings: AppSettings) => {
         setAppSettings(newSettings);
-        if (newSettings.theme !== theme) setTheme(newSettings.theme);
+        if (newSettings.theme !== appSettings.theme) {
+            setTheme(newSettings.theme);
+        }
         if (newSettings.autoSave) {
             localStorage.setItem('app-settings', JSON.stringify(newSettings));
         }
-    }, [theme, setTheme]);
+    }, [appSettings.theme, setTheme]);
 
     const handleImportTodos = useCallback(async (importedTodos: TodoFormData[]) => {
         try {
