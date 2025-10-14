@@ -81,7 +81,7 @@ function TodoApp() {
     // HOOKS & STATE
     // ============================================
     const { theme, isDarkMode, setTheme } = useTheme();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth(); // ← user'ı da alın
 
     // ✅ reorderTodos REMOVED
     const {
@@ -330,6 +330,7 @@ function TodoApp() {
                 onThemeChange={setTheme}
                 onAddTodo={() => setIsAddModalOpen(true)}
                 onLogout={handleLogout}
+                userName={user?.name || user?.email || 'User'}
             />
 
             {/* Main Content */}
