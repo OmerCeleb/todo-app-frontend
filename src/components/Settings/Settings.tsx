@@ -14,14 +14,13 @@ import {
     AlertTriangle,
     Sun,
     Moon,
-    Monitor
+    Monitor,
+    Sparkles,
+    Shield,
+    Zap
 } from 'lucide-react';
-import { Button } from '../ui/Button';
 import type { TodoFormData } from '../TodoForm';
 
-/**
- * Settings component props
- */
 interface SettingsProps {
     isOpen: boolean;
     onClose: () => void;
@@ -32,9 +31,6 @@ interface SettingsProps {
     currentTheme?: 'light' | 'dark' | 'system';
 }
 
-/**
- * Application settings interface
- */
 export interface AppSettings {
     defaultPriority: 'low' | 'medium' | 'high';
     autoMarkOverdue: boolean;
@@ -46,9 +42,6 @@ export interface AppSettings {
     theme: 'light' | 'dark' | 'system';
 }
 
-/**
- * Default settings configuration
- */
 const defaultSettings: AppSettings = {
     defaultPriority: 'medium',
     autoMarkOverdue: true,
@@ -60,10 +53,6 @@ const defaultSettings: AppSettings = {
     theme: 'system',
 };
 
-/**
- * Settings Component
- * Manages application preferences and data import/export
- */
 export function Settings({
                              isOpen,
                              onClose,
@@ -73,16 +62,12 @@ export function Settings({
                              currentTheme = 'system',
                              darkMode = false
                          }: SettingsProps) {
-    // State
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [hasChanges, setHasChanges] = useState(false);
     const [importing, setImporting] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [importStatus, setImportStatus] = useState<string>('');
 
-    /**
-     * Load settings from localStorage when modal opens
-     */
     useEffect(() => {
         if (isOpen) {
             const savedSettings = localStorage.getItem('app-settings');
@@ -103,55 +88,37 @@ export function Settings({
         }
     }, [isOpen, currentTheme]);
 
-    /**
-     * Handle individual setting changes
-     */
     const handleSettingChange = (key: keyof AppSettings, value: any) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
-        setHasChanges(true); // ← Her zaman true yap, autoSave olsa bile
+        setHasChanges(true);
 
-        // ✅ Handle theme separately - immediately apply
         if (key === 'theme') {
             onThemeChange?.(value as 'light' | 'dark' | 'system');
-            // Save theme immediately to localStorage only
             const currentSettings = JSON.parse(localStorage.getItem('app-settings') || '{}');
             localStorage.setItem('app-settings', JSON.stringify({ ...currentSettings, theme: value }));
-            return; // ← Early return
+            return;
         }
-
     };
 
-    /**
-     * Save settings to localStorage
-     * ✅ FIXED: Now auto-closes modal after saving
-     */
     const handleSaveSettings = () => {
         try {
             localStorage.setItem('app-settings', JSON.stringify(settings));
             setHasChanges(false);
-
-            // ✅ Call both callbacks
             onSettingsChange?.(settings);
             onThemeChange?.(settings.theme);
-
             setImportStatus('✅ Settings saved successfully!');
 
-            // Auto-close modal after showing success message
             setTimeout(() => {
                 setImportStatus('');
                 onClose();
             }, 1000);
-
         } catch (error) {
             console.error('Error saving settings:', error);
             setImportStatus('❌ Failed to save settings');
         }
     };
 
-    /**
-     * Export todos to JSON file
-     */
     const handleExportData = async () => {
         setExporting(true);
         try {
@@ -179,9 +146,6 @@ export function Settings({
         }
     };
 
-    /**
-     * Import todos from JSON file
-     */
     const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -213,9 +177,6 @@ export function Settings({
         reader.readAsText(file);
     };
 
-    /**
-     * Reset settings to defaults
-     */
     const handleResetSettings = () => {
         if (window.confirm('Are you sure you want to reset all settings to default?')) {
             setSettings(defaultSettings);
@@ -224,9 +185,6 @@ export function Settings({
         }
     };
 
-    /**
-     * Clear all data
-     */
     const handleClearData = () => {
         if (window.confirm('⚠️ This will delete ALL your todos and settings. This action cannot be undone!')) {
             localStorage.clear();
@@ -239,14 +197,11 @@ export function Settings({
         }
     };
 
-    /**
-     * Get theme icon
-     */
     const getThemeIcon = (theme: string) => {
         switch (theme) {
-            case 'light': return <Sun className="w-5 h-5 text-yellow-500" />;
-            case 'dark': return <Moon className="w-5 h-5 text-blue-400" />;
-            default: return <Monitor className="w-5 h-5 text-gray-400" />;
+            case 'light': return <Sun className="w-4 h-4" />;
+            case 'dark': return <Moon className="w-4 h-4" />;
+            default: return <Monitor className="w-4 h-4" />;
         }
     };
 
@@ -256,30 +211,40 @@ export function Settings({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-scale-in border ${
-                darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
+            <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-scale-in border-2 ${
+                darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
             }`}>
                 {/* Header */}
-                <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${
+                <div className={`flex items-center justify-between p-6 border-b ${
                     darkMode ? 'border-gray-800' : 'border-gray-200'
                 }`}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                            <SettingsIcon className="w-5 h-5 text-white" />
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl blur-md opacity-50"></div>
+                            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                <SettingsIcon className="w-6 h-6 text-white" />
+                            </div>
                         </div>
-                        <h2 className={`text-xl sm:text-2xl font-bold ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                        }`}>Settings</h2>
+                        <div>
+                            <h2 className={`text-2xl font-bold ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>Settings</h2>
+                            <p className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>Customize your TaskMaster experience</p>
+                        </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className={`p-2 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
+                        className={`p-2 rounded-xl transition-all ${
+                            darkMode
+                                ? 'hover:bg-gray-800 text-gray-400 hover:text-white'
+                                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                         }`}
                         aria-label="Close"
                     >
@@ -288,10 +253,10 @@ export function Settings({
                 </div>
 
                 {/* Content */}
-                <div className="p-4 sm:p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
                     {/* Status Message */}
                     {importStatus && (
-                        <div className={`p-3 sm:p-4 rounded-lg border text-sm font-medium ${
+                        <div className={`p-4 rounded-xl border-2 text-sm font-semibold animate-slideDown ${
                             importStatus.includes('✅')
                                 ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
                                 : importStatus.includes('❌')
@@ -302,83 +267,99 @@ export function Settings({
                         </div>
                     )}
 
-                    {/* Theme Switcher Section */}
-                    <div className={`p-4 sm:p-6 rounded-xl border ${
-                        darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
+                    {/* Theme Switcher */}
+                    <div className={`p-6 rounded-xl border-2 ${
+                        darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode ? 'bg-purple-900/30' : 'bg-gradient-to-br from-purple-100 to-purple-200'
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                darkMode ? 'bg-blue-900/30' : 'bg-white shadow-md'
                             }`}>
-                                {getThemeIcon(currentTheme)}
+                                <Sparkles className={`w-6 h-6 ${
+                                    darkMode ? 'text-blue-400' : 'text-blue-600'
+                                }`} />
                             </div>
-                            <h3 className={`text-lg font-bold ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>Appearance</h3>
+                            <div>
+                                <h3 className={`text-lg font-bold ${
+                                    darkMode ? 'text-white' : 'text-gray-900'
+                                }`}>Appearance</h3>
+                                <p className={`text-sm ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                                }`}>Choose your preferred theme</p>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { value: 'light', label: 'Light', icon: Sun },
-                                { value: 'dark', label: 'Dark', icon: Moon },
-                                { value: 'system', label: 'System', icon: Monitor },
-                            ].map(({ value, label, icon: Icon }) => (
+                                { value: 'light', label: 'Light', icon: Sun, color: 'from-yellow-400 to-orange-400' },
+                                { value: 'dark', label: 'Dark', icon: Moon, color: 'from-blue-500 to-indigo-600' },
+                                { value: 'system', label: 'Auto', icon: Monitor, color: 'from-purple-500 to-pink-500' }
+                            ].map(({ value, label, icon: Icon, color }) => (
                                 <button
                                     key={value}
-                                    onClick={() => onThemeChange?.(value as any)}
-                                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                                        currentTheme === value
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                            : darkMode
-                                                ? 'border-gray-700 bg-gray-700/50 hover:border-gray-600'
-                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                    onClick={() => handleSettingChange('theme', value)}
+                                    className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
+                                        settings.theme === value
+                                            ? `border-blue-500 ring-4 ring-blue-500/20 ${
+                                                darkMode ? 'bg-blue-900/20' : 'bg-blue-50'
+                                            }`
+                                            : `${
+                                                darkMode
+                                                    ? 'border-gray-700 hover:border-gray-600 bg-gray-800/50'
+                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                            }`
                                     }`}
                                 >
-                                    <Icon className={`w-5 h-5 ${
-                                        currentTheme === value
-                                            ? 'text-blue-600 dark:text-blue-400'
-                                            : darkMode ? 'text-gray-400' : 'text-gray-600'
-                                    }`} />
-                                    <span className={`text-sm font-medium ${
-                                        currentTheme === value
-                                            ? 'text-blue-600 dark:text-blue-400'
-                                            : darkMode ? 'text-gray-300' : 'text-gray-700'
-                                    }`}>{label}</span>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center shadow-lg`}>
+                                            <Icon className="w-5 h-5 text-white" />
+                                        </div>
+                                        <span className={`text-sm font-semibold ${
+                                            settings.theme === value
+                                                ? 'text-blue-600 dark:text-blue-400'
+                                                : darkMode ? 'text-gray-300' : 'text-gray-700'
+                                        }`}>{label}</span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* General Settings */}
-                    <div className={`p-4 sm:p-6 rounded-xl border ${
+                    <div className={`p-6 rounded-xl border-2 ${
                         darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode ? 'bg-blue-900/30' : 'bg-gradient-to-br from-blue-100 to-blue-200'
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                darkMode ? 'bg-purple-900/30' : 'bg-gradient-to-br from-purple-100 to-purple-200 shadow-md'
                             }`}>
-                                <SettingsIcon className={`w-5 h-5 ${
-                                    darkMode ? 'text-blue-400' : 'text-blue-600'
+                                <Zap className={`w-6 h-6 ${
+                                    darkMode ? 'text-purple-400' : 'text-purple-600'
                                 }`} />
                             </div>
-                            <h3 className={`text-lg font-bold ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>General Settings</h3>
+                            <div>
+                                <h3 className={`text-lg font-bold ${
+                                    darkMode ? 'text-white' : 'text-gray-900'
+                                }`}>General Settings</h3>
+                                <p className={`text-sm ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                                }`}>Configure app behavior</p>
+                            </div>
                         </div>
 
                         <div className="space-y-6">
                             {/* Default Priority */}
                             <div>
-                                <label className={`flex items-center gap-2 text-sm font-semibold mb-2 ${
+                                <label className={`flex items-center gap-2 text-sm font-semibold mb-3 ${
                                     darkMode ? 'text-gray-300' : 'text-gray-700'
                                 }`}>
                                     <CheckCircle className="w-4 h-4" />
-                                    Default Priority
+                                    Default Priority for New Tasks
                                 </label>
                                 <select
                                     value={settings.defaultPriority}
                                     onChange={(e) => handleSettingChange('defaultPriority', e.target.value)}
-                                    className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                                    className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium ${
                                         darkMode
                                             ? 'bg-gray-700 border-gray-600 text-white'
                                             : 'bg-white border-gray-300 text-gray-900'
@@ -393,20 +374,20 @@ export function Settings({
                             {/* Toggle Settings */}
                             <div className="grid grid-cols-1 gap-3">
                                 {[
-                                    { key: 'autoMarkOverdue', label: 'Auto-mark overdue tasks', icon: AlertTriangle, description: 'Automatically mark tasks as overdue when due date passes' },
-                                    { key: 'notifications', label: 'Enable notifications', icon: Bell, description: 'Show browser notifications for important events' },
-                                    { key: 'soundEffects', label: 'Sound effects', icon: Volume2, description: 'Play sounds for task completion and other actions' },
-                                    { key: 'compactView', label: 'Compact view', icon: Eye, description: 'Use a more compact layout to fit more items on screen' },
-                                    { key: 'showCompletedTasks', label: 'Show completed tasks', icon: CheckCircle, description: 'Display completed tasks in the list' },
-                                    { key: 'autoSave', label: 'Auto-save settings', icon: Save, description: 'Automatically save changes without clicking Save' },
+                                    { key: 'autoMarkOverdue', label: 'Auto-mark overdue tasks', icon: AlertTriangle, description: 'Automatically highlight overdue tasks' },
+                                    { key: 'notifications', label: 'Enable notifications', icon: Bell, description: 'Show browser notifications' },
+                                    { key: 'soundEffects', label: 'Sound effects', icon: Volume2, description: 'Play sounds for actions' },
+                                    { key: 'compactView', label: 'Compact view', icon: Eye, description: 'Use compact layout' },
+                                    { key: 'showCompletedTasks', label: 'Show completed tasks', icon: CheckCircle, description: 'Display completed tasks' },
+                                    { key: 'autoSave', label: 'Auto-save settings', icon: Save, description: 'Save changes automatically' },
                                 ].map(({ key, label, icon: Icon, description }) => (
                                     <label
                                         key={key}
-                                        className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                                        className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                                             settings[key as keyof AppSettings]
-                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                ? `border-blue-500 ${darkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`
                                                 : darkMode
-                                                    ? 'border-gray-700 hover:border-gray-600 bg-gray-700/50'
+                                                    ? 'border-gray-700 hover:border-gray-600 bg-gray-800/30'
                                                     : 'border-gray-200 hover:border-gray-300 bg-white'
                                         }`}
                                     >
@@ -414,20 +395,33 @@ export function Settings({
                                             type="checkbox"
                                             checked={settings[key as keyof AppSettings] as boolean}
                                             onChange={(e) => handleSettingChange(key as keyof AppSettings, e.target.checked)}
-                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                                            className="sr-only peer"
                                         />
+                                        <div className="flex-shrink-0">
+                                            <Icon className={`w-5 h-5 ${
+                                                settings[key as keyof AppSettings]
+                                                    ? 'text-blue-600 dark:text-blue-400'
+                                                    : darkMode ? 'text-gray-400' : 'text-gray-500'
+                                            }`} />
+                                        </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Icon className={`w-4 h-4 flex-shrink-0 ${
-                                                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                                                }`} />
-                                                <span className={`text-sm font-semibold ${
-                                                    darkMode ? 'text-white' : 'text-gray-900'
-                                                }`}>{label}</span>
-                                            </div>
-                                            <p className={`text-xs ${
+                                            <div className={`text-sm font-semibold ${
+                                                darkMode ? 'text-white' : 'text-gray-900'
+                                            }`}>{label}</div>
+                                            <div className={`text-xs mt-1 ${
                                                 darkMode ? 'text-gray-400' : 'text-gray-600'
-                                            }`}>{description}</p>
+                                            }`}>{description}</div>
+                                        </div>
+                                        <div className={`flex-shrink-0 w-12 h-6 rounded-full transition-all ${
+                                            settings[key as keyof AppSettings]
+                                                ? 'bg-blue-600'
+                                                : darkMode ? 'bg-gray-700' : 'bg-gray-300'
+                                        }`}>
+                                            <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 mt-0.5 ${
+                                                settings[key as keyof AppSettings]
+                                                    ? 'translate-x-6'
+                                                    : 'translate-x-0.5'
+                                            }`}></div>
                                         </div>
                                     </label>
                                 ))}
@@ -436,32 +430,42 @@ export function Settings({
                     </div>
 
                     {/* Data Management */}
-                    <div className={`p-4 sm:p-6 rounded-xl border ${
+                    <div className={`p-6 rounded-xl border-2 ${
                         darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
                     }`}>
                         <div className="flex items-center gap-3 mb-6">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode ? 'bg-green-900/30' : 'bg-gradient-to-br from-green-100 to-green-200'
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                darkMode ? 'bg-green-900/30' : 'bg-gradient-to-br from-green-100 to-green-200 shadow-md'
                             }`}>
-                                <Download className={`w-5 h-5 ${
+                                <Shield className={`w-6 h-6 ${
                                     darkMode ? 'text-green-400' : 'text-green-600'
                                 }`} />
                             </div>
-                            <h3 className={`text-lg font-bold ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>Data Management</h3>
+                            <div>
+                                <h3 className={`text-lg font-bold ${
+                                    darkMode ? 'text-white' : 'text-gray-900'
+                                }`}>Data Management</h3>
+                                <p className={`text-sm ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                                }`}>Backup and restore your data</p>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <Button
-                                variant="outline"
+                            <button
                                 onClick={handleExportData}
                                 disabled={exporting}
-                                icon={<Download className="w-4 h-4" />}
-                                className="justify-center"
+                                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
+                                    exporting
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : darkMode
+                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                }`}
                             >
+                                <Download className="w-5 h-5" />
                                 {exporting ? 'Exporting...' : 'Export Data'}
-                            </Button>
+                            </button>
 
                             <label className="relative">
                                 <input
@@ -471,69 +475,73 @@ export function Settings({
                                     disabled={importing}
                                     className="hidden"
                                 />
-                                <div className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors ${
+                                <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold cursor-pointer transition-all ${
                                     importing
                                         ? 'opacity-50 cursor-not-allowed'
                                         : darkMode
-                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
                                 }`}>
-                                    <Upload className="w-4 h-4" />
-                                    <span className="text-sm font-medium">{importing ? 'Importing...' : 'Import Data'}</span>
+                                    <Upload className="w-5 h-5" />
+                                    {importing ? 'Importing...' : 'Import Data'}
                                 </div>
                             </label>
                         </div>
 
                         {/* Danger Zone */}
-                        <div className={`pt-4 mt-4 border-t ${
-                            darkMode ? 'border-gray-600' : 'border-gray-300'
+                        <div className={`pt-6 mt-6 border-t-2 ${
+                            darkMode ? 'border-gray-700' : 'border-gray-300'
                         }`}>
-                            <label className="flex items-center gap-2 text-sm font-semibold mb-3 text-red-600 dark:text-red-400">
-                                <AlertTriangle className="w-4 h-4" />
+                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-red-600 dark:text-red-400">
+                                <AlertTriangle className="w-5 h-5" />
                                 Danger Zone
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <Button
-                                    variant="outline"
+                                <button
                                     onClick={handleResetSettings}
-                                    icon={<SettingsIcon className="w-4 h-4" />}
-                                    className="justify-center border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 font-semibold hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all"
                                 >
+                                    <SettingsIcon className="w-5 h-5" />
                                     Reset Settings
-                                </Button>
-                                <Button
-                                    variant="outline"
+                                </button>
+                                <button
                                     onClick={handleClearData}
-                                    icon={<Trash2 className="w-4 h-4" />}
-                                    className="justify-center border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                 >
+                                    <Trash2 className="w-5 h-5" />
                                     Clear All Data
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className={`flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t ${
+                <div className={`flex flex-col sm:flex-row gap-3 p-6 border-t-2 ${
                     darkMode ? 'border-gray-800' : 'border-gray-200'
                 }`}>
-                    <Button
-                        variant="outline"
+                    <button
                         onClick={onClose}
-                        className="flex-1 sm:flex-none sm:w-32"
+                        className={`flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-semibold transition-all ${
+                            darkMode
+                                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                         Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
+                    </button>
+                    <button
                         onClick={handleSaveSettings}
                         disabled={!hasChanges}
-                        icon={<Save className="w-4 h-4" />}
-                        className="flex-1 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold transition-all ${
+                            hasChanges
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transform hover:scale-[1.02] active:scale-[0.98]'
+                                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        }`}
                     >
+                        <Save className="w-5 h-5" />
                         {hasChanges ? 'Save Changes' : 'No Changes'}
-                    </Button>
+                    </button>
                 </div>
             </div>
         </div>

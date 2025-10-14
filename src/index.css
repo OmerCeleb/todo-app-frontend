@@ -605,4 +605,238 @@
     .no-print {
         display: none !important;
     }
+    /* Slide down animation for notifications and dropdowns */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-slideDown {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    /* Slide in from left for mobile menu */
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .animate-slideInLeft {
+        animation: slideInLeft 0.3s ease-out;
+    }
+
+    /* Pulse animation delays for background elements */
+    .delay-1000 {
+        animation-delay: 1s;
+    }
+
+    .delay-2000 {
+        animation-delay: 2s;
+    }
+
+    /* Smooth hover effects for form inputs */
+    input:focus {
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Loading spinner */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Scale animation for buttons */
+    @keyframes scaleUp {
+        from {
+            transform: scale(1);
+        }
+        to {
+            transform: scale(1.02);
+        }
+    }
+
+    /* Fade in animation */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    /* Glass morphism effect utility classes */
+    .backdrop-blur-xl {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* Custom focus ring */
+    .focus-ring {
+        @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    /* Gradient text */
+    .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Shadow utilities for modern design */
+    .shadow-glow {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .shadow-glow-hover:hover {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Smooth transitions for all interactive elements */
+    button,
+    input,
+    a {
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Ensure smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Password strength bar animation */
+    .password-strength-bar {
+        transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    }
+
+    /* Scale in animation for modals */
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.2s ease-out;
+    }
+
+    /* Fade animation */
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-in;
+    }transition: all 0.2s ease-in-out;
+}
+
+/* Loading spinner */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Scale animation for buttons */
+@keyframes scaleUp {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.02);
+    }
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Glass morphism effect utility classes */
+.backdrop-blur-xl {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* Custom focus ring */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Gradient text */
+.text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Shadow utilities for modern design */
+.shadow-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.shadow-glow-hover:hover {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+input,
+a {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Ensure smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Password strength bar animation */
+.password-strength-bar {
+    transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+
 }

@@ -185,7 +185,7 @@ function TodoApp() {
 
         if (appSettings.soundEffects) sounds.create();
 
-        // ✅ DEBUG: Konsola yazdır
+        // ✅ DEBUG
         console.log('🔔 Notification check:', {
             notificationsEnabled: appSettings.notifications,
             title: formData.title,
