@@ -1,9 +1,9 @@
-// src/hooks/useTodosAPI.ts - SIMPLIFIED VERSION
+// src/hooks/useTodosAPI.ts - FIXED VERSION
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { todoService } from '../services/todoService';
 import type { Todo, TodoFormData } from '../components/TodoForm';
 import { getDateFilters, type DateFilter } from '../utils/dateUtils';
-import { logger } from '../utils/logger';  // ✅ Production-safe logger
+import { logger } from '../utils/logger';
 
 export interface FilterOptions {
     status: 'all' | 'active' | 'completed';
@@ -59,29 +59,18 @@ export function useTodosAPI(): UseTodosAPIReturn {
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    /**
-     * Load statistics from API
-     * ✅ SIMPLIFIED: No try-catch, apiClient handles errors
-     */
     const loadStats = useCallback(async () => {
         const stats = await todoService.getStats();
         setStats(stats);
         logger.debug('Stats loaded:', stats);
     }, []);
 
-    /**
-     * Load categories from API
-     */
     const loadCategories = useCallback(async () => {
         const cats = await todoService.getCategories();
         setCategories(cats);
         logger.debug('Categories loaded:', cats);
     }, []);
 
-    /**
-     * Fetch todos from backend
-     * ✅ SIMPLIFIED: Centralized error handling
-     */
     const fetchTodos = useCallback(async () => {
         setLoading(true);
         try {
@@ -97,6 +86,20 @@ export function useTodosAPI(): UseTodosAPIReturn {
             setLoading(false);
         }
     }, [loadCategories, loadStats]);
+
+    /**
+     * ✅ CRITICAL: Check if any filters/sorts are active
+     */
+    const hasActiveFiltersOrSort = useMemo(() => {
+        return (
+            filters.status !== 'all' ||
+            filters.priority !== 'all' ||
+            filters.category !== 'all' ||
+            filters.dateFilter !== 'all' ||
+            filters.sortBy !== 'created' ||
+            filters.sortOrder !== 'desc'
+        );
+    }, [filters]);
 
     /**
      * Apply client-side filtering and sorting
@@ -167,9 +170,6 @@ export function useTodosAPI(): UseTodosAPIReturn {
         return filtered;
     }, [todos, filters]);
 
-    /**
-     * Search todos
-     */
     const searchTodos = useCallback((query: string): Todo[] => {
         if (!query) return filteredAndSortedTodos;
 
@@ -180,12 +180,6 @@ export function useTodosAPI(): UseTodosAPIReturn {
             todo.category?.toLowerCase().includes(searchQuery)
         );
     }, [filteredAndSortedTodos]);
-
-    /**
-     * ✅ SIMPLIFIED CRUD Operations - No try-catch!
-     * apiClient already handles errors and throws them
-     * Parent components can catch if needed
-     */
 
     const createTodo = useCallback(async (data: TodoFormData) => {
         await todoService.createTodo(data);
@@ -215,14 +209,42 @@ export function useTodosAPI(): UseTodosAPIReturn {
         await fetchTodos();
     }, [fetchTodos]);
 
-    const reorderTodos = useCallback(async (reorderedTodos: Todo[]) => {
-        setTodos(reorderedTodos);
-        // Optionally send to backend
-    }, []);
-
     /**
-     * Refresh todos
+     * ✅ FIXED: Reorder with filter/sort awareness
      */
+    const reorderTodos = useCallback(async (reorderedTodos: Todo[]) => {
+        // ⚠️ IMPORTANT: Warn user if filters/sorts are active
+        if (hasActiveFiltersOrSort) {
+            logger.warn('⚠️ Cannot drag & drop when filters or custom sorting is active!');
+            logger.warn('Please reset filters to default to use drag & drop.');
+            throw new Error('Drag & drop only works with default sorting (Created Date, Newest)');
+        }
+
+        // 1. Optimistic update - immediately update UI
+        setTodos(reorderedTodos);
+
+        try {
+            // 2. Prepare reorder data for backend
+            const reorderData = reorderedTodos.map((todo, index) => ({
+                id: todo.id,
+                order: index
+            }));
+
+            // 3. Send to backend
+            await todoService.reorderTodos(reorderData);
+
+            logger.info('✅ Todos reordered successfully');
+
+        } catch (error) {
+            logger.error('❌ Failed to reorder todos:', error);
+
+            // 4. On error, restore previous state by fetching from backend
+            await fetchTodos();
+
+            throw error;
+        }
+    }, [hasActiveFiltersOrSort, fetchTodos]);
+
     const refreshTodos = useCallback(async () => {
         setIsRefreshing(true);
         try {
@@ -232,14 +254,10 @@ export function useTodosAPI(): UseTodosAPIReturn {
         }
     }, [fetchTodos]);
 
-    /**
-     * Clear error
-     */
     const clearError = useCallback(() => {
         setError(null);
     }, []);
 
-    // Initial load
     useEffect(() => {
         fetchTodos();
     }, [fetchTodos]);
@@ -264,24 +282,3 @@ export function useTodosAPI(): UseTodosAPIReturn {
         clearError
     };
 }
-
-/**
- * ✅ KEY IMPROVEMENTS:
- *
- * 1. Removed unnecessary try-catch blocks in CRUD operations
- *    - apiClient already handles errors
- *    - Parent components can catch if they need to
- *
- * 2. Added production-safe logger
- *    - Only logs in development
- *    - Formatted output with timestamps
- *
- * 3. Cleaner code
- *    - Less boilerplate
- *    - More readable
- *    - Same functionality
- *
- * 4. Centralized error handling
- *    - Only fetchTodos has try-catch for loading state
- *    - Others let errors bubble up naturally
- */

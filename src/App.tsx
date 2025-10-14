@@ -1,4 +1,8 @@
-// src/App.tsx - Complete Final Version (Fixed ESLint & TypeScript errors)
+// ========================================
+// DOSYA: src/App.tsx
+// ========================================
+// Bu kodu App.tsx dosyasına kopyalayın
+// ========================================
 import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import LoginPage from './components/Auth/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -23,7 +27,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { BulkActions } from './components/BulkActions';
 import { TodoListView } from './components/TodoListView';
 
-// ✅ Code splitting for heavy components
+// Code splitting for heavy components
 const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
 const Settings = lazy(() => import('./components/Settings').then(module => ({ default: module.Settings })));
 
@@ -79,6 +83,7 @@ function TodoApp() {
     const { theme, isDarkMode, setTheme } = useTheme();
     const { logout } = useAuth();
 
+    // ✅ reorderTodos REMOVED
     const {
         todos,
         categories,
@@ -143,11 +148,7 @@ function TodoApp() {
         }
     }, [appSettings]);
 
-    // ❌ REMOVED: This was causing the loop
-    // Theme sync with settings - REMOVED because it creates a loop
-    // useTheme hook already handles theme persistence
-
-    // ✅ Apply dark mode class to document
+    // Apply dark mode class to document
     useEffect(() => {
         if (isDarkMode) {
             document.documentElement.classList.add('dark');
@@ -172,7 +173,6 @@ function TodoApp() {
     const handleSettingsChange = useCallback((newSettings: AppSettings) => {
         setAppSettings(newSettings);
 
-        // ✅ Only update theme if it actually changed
         if (newSettings.theme !== theme) {
             setTheme(newSettings.theme);
         }
@@ -231,7 +231,6 @@ function TodoApp() {
         await apiToggleTodo(id);
 
         if (appSettings.soundEffects) {
-            // ✅ Fixed: sounds doesn't have uncomplete, just use complete
             sounds.complete();
         }
 
@@ -302,6 +301,18 @@ function TodoApp() {
         logger.debug('Filters changed:', newFilters);
     }, [setFilters]);
 
+    const handleSelectTodo = useCallback((id: string, selected: boolean) => {
+        setSelectedTodos(prev => {
+            const newSet = new Set(prev);
+            if (selected) {
+                newSet.add(id);
+            } else {
+                newSet.delete(id);
+            }
+            return newSet;
+        });
+    }, []);
+
     // ============================================
     // RENDER
     // ============================================
@@ -321,20 +332,21 @@ function TodoApp() {
                 onLogout={handleLogout}
             />
 
-            {/* View Switcher */}
-            <div className="container mx-auto px-4 pt-4 max-w-7xl">
-                <div className="flex gap-2 mb-4">
+            {/* Main Content */}
+            <main className="container mx-auto px-4 pt-6 pb-20 max-w-7xl">
+                {/* View Switcher */}
+                <div className="flex gap-2 mb-6">
                     <button
                         onClick={() => setCurrentView('list')}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                             currentView === 'list'
                                 ? 'bg-blue-500 text-white'
                                 : isDarkMode
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100'
                         }`}
                     >
-                        📋 List
+                        📝 List
                     </button>
                     <button
                         onClick={() => setCurrentView('dashboard')}
@@ -342,8 +354,8 @@ function TodoApp() {
                             currentView === 'dashboard'
                                 ? 'bg-blue-500 text-white'
                                 : isDarkMode
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                         📊 Dashboard
@@ -354,62 +366,24 @@ function TodoApp() {
                             currentView === 'settings'
                                 ? 'bg-blue-500 text-white'
                                 : isDarkMode
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                         ⚙️ Settings
                     </button>
                 </div>
-            </div>
 
-            {/* Main Content */}
-            <main className="container mx-auto px-4 pb-8 max-w-7xl">
-                {/* Error Display */}
-                {error && (
-                    <ErrorState
-                        message={error}
-                        onRetry={refreshTodos}
-                    />
-                )}
-
-                {/* View Router */}
+                {/* List View */}
                 {currentView === 'list' && (
                     <>
-                        {/* Filters & Search */}
-                        <div className="mb-6 space-y-4">
-                            <TodoFilters
-                                filters={filters}
-                                onFiltersChange={handleFiltersChange}
-                                categories={categories}
-                                darkMode={isDarkMode}
-                            />
-
-                            {/* Search Bar */}
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search todos..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`w-full px-4 py-3 pl-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                                        isDarkMode
-                                            ? 'bg-gray-800 border-gray-700 text-white'
-                                            : 'bg-white border-gray-200'
-                                    }`}
-                                />
-                                <span className="absolute left-3 top-3.5 text-gray-400">🔍</span>
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                        aria-label="Clear search"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                        {/* Filters */}
+                        <TodoFilters
+                            filters={filters}
+                            onFiltersChange={handleFiltersChange}
+                            categories={categories}
+                            darkMode={isDarkMode}
+                        />
 
                         {/* Bulk Actions */}
                         {selectedTodos.size > 0 && (
@@ -436,32 +410,31 @@ function TodoApp() {
                         )}
 
                         {/* Todo List */}
-                        {loading && displayedTodos.length === 0 ? (
-                            <LoadingState message="Loading your todos..." />
-                        ) : displayedTodos.length === 0 ? (
-                            <EmptyState type={searchQuery ? 'no-search-results' : 'no-todos'} />
-                        ) : (
-                            <TodoListView
-                                todos={displayedTodos}
-                                onToggle={toggleTodo}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                                onReorder={() => {}} // ✅ Empty function - drag and drop disabled
-                                selectedTodos={selectedTodos}
-                                onSelect={(id: string, selected: boolean) => {
-                                    setSelectedTodos(prev => {
-                                        const newSet = new Set(prev);
-                                        if (selected) {
-                                            newSet.add(id);
-                                        } else {
-                                            newSet.delete(id);
-                                        }
-                                        return newSet;
-                                    });
-                                }}
-                                isDarkMode={isDarkMode}
-                            />
-                        )}
+                        <div className="space-y-4">
+                            {loading && !todos.length ? (
+                                <LoadingState message="Loading your todos..." />
+                            ) : error ? (
+                                <ErrorState
+                                    message={error}
+                                    onRetry={refreshTodos}
+                                />
+                            ) : displayedTodos.length === 0 ? (
+                                <EmptyState
+                                    type={searchQuery ? 'no-search-results' : 'no-todos'}
+                                />
+                            ) : (
+                                // ✅ onReorder REMOVED
+                                <TodoListView
+                                    todos={displayedTodos}
+                                    onToggle={toggleTodo}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                    onSelect={handleSelectTodo}
+                                    selectedTodos={selectedTodos}
+                                    isDarkMode={isDarkMode}
+                                />
+                            )}
+                        </div>
                     </>
                 )}
 
