@@ -89,16 +89,19 @@ export function Settings({
             if (savedSettings) {
                 try {
                     const parsed = JSON.parse(savedSettings);
-                    setSettings({ ...defaultSettings, ...parsed });
+                    const synced = { ...defaultSettings, ...parsed, theme: currentTheme };
+                    setSettings(synced);
                 } catch (error) {
                     console.error('Failed to parse settings:', error);
-                    setSettings(defaultSettings);
+                    setSettings({ ...defaultSettings, theme: currentTheme });
                 }
+            } else {
+                setSettings({ ...defaultSettings, theme: currentTheme });
             }
             setHasChanges(false);
             setImportStatus('');
         }
-    }, [isOpen]);
+    }, [isOpen, currentTheme]);
 
     /**
      * Handle individual setting changes
@@ -106,13 +109,17 @@ export function Settings({
     const handleSettingChange = (key: keyof AppSettings, value: any) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
-        setHasChanges(true);
+        setHasChanges(true); // ← Her zaman true yap, autoSave olsa bile
 
-        // Apply settings immediately if auto-save is enabled
-        if (settings.autoSave) {
-            localStorage.setItem('app-settings', JSON.stringify(newSettings));
-            onSettingsChange?.(newSettings);
+        // ✅ Handle theme separately - immediately apply
+        if (key === 'theme') {
+            onThemeChange?.(value as 'light' | 'dark' | 'system');
+            // Save theme immediately to localStorage only
+            const currentSettings = JSON.parse(localStorage.getItem('app-settings') || '{}');
+            localStorage.setItem('app-settings', JSON.stringify({ ...currentSettings, theme: value }));
+            return; // ← Early return
         }
+
     };
 
     /**
@@ -123,19 +130,22 @@ export function Settings({
         try {
             localStorage.setItem('app-settings', JSON.stringify(settings));
             setHasChanges(false);
+
+            // ✅ Call both callbacks
             onSettingsChange?.(settings);
+            onThemeChange?.(settings.theme);
+
             setImportStatus('✅ Settings saved successfully!');
 
-            // ✅ FIXED: Auto-close modal after showing success message
+            // Auto-close modal after showing success message
             setTimeout(() => {
                 setImportStatus('');
-                onClose(); // Close the modal
-            }, 1000); // Wait 1 second so user can see success message
+                onClose();
+            }, 1000);
 
         } catch (error) {
             console.error('Error saving settings:', error);
             setImportStatus('❌ Failed to save settings');
-            // Modal stays open on error
         }
     };
 

@@ -1,8 +1,3 @@
-// ========================================
-// DOSYA: src/App.tsx
-// ========================================
-// Bu kodu App.tsx dosyasına kopyalayın
-// ========================================
 import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import LoginPage from './components/Auth/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -189,6 +184,14 @@ function TodoApp() {
         await apiCreateTodo(todoData);
 
         if (appSettings.soundEffects) sounds.create();
+
+        // ✅ DEBUG: Konsola yazdır
+        console.log('🔔 Notification check:', {
+            notificationsEnabled: appSettings.notifications,
+            title: formData.title,
+            willShow: appSettings.notifications ? 'YES' : 'NO'
+        });
+
         if (appSettings.notifications) {
             showCreate(`"${formData.title}" created successfully!`, 3000);
         }
@@ -196,7 +199,6 @@ function TodoApp() {
         setIsAddModalOpen(false);
         logger.info('Todo created:', formData.title);
     };
-
     const updateTodo = async (id: string, formData: TodoFormData) => {
         await apiUpdateTodo(id, formData);
 
